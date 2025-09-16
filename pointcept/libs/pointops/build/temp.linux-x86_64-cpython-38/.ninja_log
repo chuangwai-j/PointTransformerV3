@@ -1,0 +1,20 @@
+# ninja log v7
+1	51502	1758027302303722035	/home/wai/PointTransformerV3/Pointcept/libs/pointops/build/temp.linux-x86_64-cpython-38/src/ball_query/ball_query_cuda.o	4d839d356fc6e6dc
+0	51519	1758027302303722035	/home/wai/PointTransformerV3/Pointcept/libs/pointops/build/temp.linux-x86_64-cpython-38/src/aggregation/aggregation_cuda.o	53f1bbdd00b610c0
+1	54053	1758027302303722035	/home/wai/PointTransformerV3/Pointcept/libs/pointops/build/temp.linux-x86_64-cpython-38/src/grouping/grouping_cuda.o	c92a24e49a1c2151
+2	54320	1758027302303722035	/home/wai/PointTransformerV3/Pointcept/libs/pointops/build/temp.linux-x86_64-cpython-38/src/interpolation/interpolation_cuda.o	d9e75909b2bf3bba
+1	54688	1758027302303722035	/home/wai/PointTransformerV3/Pointcept/libs/pointops/build/temp.linux-x86_64-cpython-38/src/attention/attention_cuda.o	7ae95d6e778ef7e3
+11	58367	1758027435660244060	/home/wai/PointTransformerV3/Pointcept/libs/pointops/build/temp.linux-x86_64-cpython-38/src/knn_query/knn_query_cuda.o	bc8718ee554a3df5
+12	58375	1758027435660244060	/home/wai/PointTransformerV3/Pointcept/libs/pointops/build/temp.linux-x86_64-cpython-38/src/random_ball_query/random_ball_query_cuda.o	778fb7e525ec0f38
+11	73710	1758027435660244060	/home/wai/PointTransformerV3/Pointcept/libs/pointops/build/temp.linux-x86_64-cpython-38/src/grouping/grouping_cuda_kernel.o	ca54de4bcbcaaf90
+12	74180	1758027435660244060	/home/wai/PointTransformerV3/Pointcept/libs/pointops/build/temp.linux-x86_64-cpython-38/src/random_ball_query/random_ball_query_cuda_kernel.o	db0a0519e6267d57
+11	74184	1758027435660244060	/home/wai/PointTransformerV3/Pointcept/libs/pointops/build/temp.linux-x86_64-cpython-38/src/interpolation/interpolation_cuda_kernel.o	c8c65a4a6f3931f1
+11	75504	1758027435660244060	/home/wai/PointTransformerV3/Pointcept/libs/pointops/build/temp.linux-x86_64-cpython-38/src/ball_query/ball_query_cuda_kernel.o	940dc42ea4eabf28
+11	81477	1758027435660244060	/home/wai/PointTransformerV3/Pointcept/libs/pointops/build/temp.linux-x86_64-cpython-38/src/knn_query/knn_query_cuda_kernel.o	3c5bc83b1012bd74
+11	82605	1758027435660244060	/home/wai/PointTransformerV3/Pointcept/libs/pointops/build/temp.linux-x86_64-cpython-38/src/pointops_api.o	d26bd758191bb5c5
+11	82635	1758027435660244060	/home/wai/PointTransformerV3/Pointcept/libs/pointops/build/temp.linux-x86_64-cpython-38/src/attention/attention_cuda_kernel.o	fad217ce0bae711c
+58369	83094	1758027489053312093	/home/wai/PointTransformerV3/Pointcept/libs/pointops/build/temp.linux-x86_64-cpython-38/src/sampling/sampling_cuda.o	e0f833bc90cb1f02
+73711	88984	1758027504393315857	/home/wai/PointTransformerV3/Pointcept/libs/pointops/build/temp.linux-x86_64-cpython-38/src/subtraction/subtraction_cuda.o	b1dea830e887c9e8
+10	89498	1758027435660244060	/home/wai/PointTransformerV3/Pointcept/libs/pointops/build/temp.linux-x86_64-cpython-38/src/aggregation/aggregation_cuda_kernel.o	dc15f474c30cb445
+58375	93329	1758027489064145427	/home/wai/PointTransformerV3/Pointcept/libs/pointops/build/temp.linux-x86_64-cpython-38/src/sampling/sampling_cuda_kernel.o	e93a3d88afee2465
+74180	101502	1758027504859149307	/home/wai/PointTransformerV3/Pointcept/libs/pointops/build/temp.linux-x86_64-cpython-38/src/subtraction/subtraction_cuda_kernel.o	8713ec4dc95f2ce8

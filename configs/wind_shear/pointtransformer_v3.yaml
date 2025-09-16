@@ -1,0 +1,65 @@
+# configs/wind_shear/pointtransformer_v3.yaml
+
+model:
+  NAME: PointTransformerV3
+  encoder_depth: [2, 2, 6, 2]
+  embed_dim: 32
+  num_heads: 4
+  cloud_size: 8192  # 可以根据您的数据调整
+  in_channels: 2    # u, v 两个风速分量
+  num_classes: 2    # 二分类：有风切变/无风切变
+
+data:
+  train:
+    dataset: WindShearDataset
+    split: train
+    data_root: "D:/model/wind_datas/csv_labels"
+    transform:
+      - NAME: NormalizeWind
+        u_mean: 0.0  # 根据实际数据调整
+        u_std: 1.0
+        v_mean: 0.0
+        v_std: 1.0
+      - NAME: GridSample
+        grid_size: 0.1  # 根据数据空间分辨率调整
+      - NAME: ToTensor
+
+  val:
+    dataset: WindShearDataset
+    split: val
+    data_root: "D:/model/wind_datas/csv_labels"
+    transform:
+      - NAME: NormalizeWind
+        u_mean: 0.0
+        u_std: 1.0
+        v_mean: 0.0
+        v_std: 1.0
+      - NAME: GridSample
+        grid_size: 0.1
+      - NAME: ToTensor
+
+  test:
+    dataset: WindShearDataset
+    split: test
+    data_root: "D:/model/wind_datas/csv_labels"
+    transform:
+      - NAME: NormalizeWind
+        u_mean: 0.0
+        u_std: 1.0
+        v_mean: 0.0
+        v_std: 1.0
+      - NAME: GridSample
+        grid_size: 0.1
+      - NAME: ToTensor
+
+train:
+  epochs: 100
+  optimizer:
+    NAME: AdamW
+    lr: 0.001
+    weight_decay: 0.0001
+  scheduler:
+    NAME: CosineAnnealingLR
+    T_max: 100
+  batch_size: 8
+  num_workers: 4

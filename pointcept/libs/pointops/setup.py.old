@@ -1,0 +1,63 @@
+import os
+import glob  # 新增：用于更可靠的文件查找
+from setuptools import setup
+from torch.utils.cpp_extension import BuildExtension, CUDAExtension
+from distutils.sysconfig import get_config_vars
+
+# 移除不兼容的C++编译选项
+(opt,) = get_config_vars("OPT")
+os.environ["OPT"] = " ".join(
+    flag for flag in opt.split() if flag != "-Wstrict-prototypes"
+)
+
+# ########################### 修复：可靠收集源文件 ###########################
+# 1. 确认当前工作目录（调试用，可保留）
+current_dir = os.getcwd()
+print(f"当前工作目录：{current_dir}")
+
+# 2. 源文件目录（当前目录下的src文件夹，绝对路径更可靠）
+src_dir = os.path.join(current_dir, "src")
+print(f"源文件目录（绝对路径）：{src_dir}")
+
+# 3. 用glob递归查找所有.cpp和.cu文件（替代os.walk，避免遍历异常）
+cpp_files = glob.glob(os.path.join(src_dir, "**", "*.cpp"), recursive=True)
+cu_files = glob.glob(os.path.join(src_dir, "**", "*.cu"), recursive=True)
+sources = cpp_files + cu_files
+
+# 4. 检查是否收集到文件（关键验证）
+if not sources:
+    raise RuntimeError(
+        f"未找到任何源文件！请检查以下路径是否存在.cpp/.cu文件：\n{src_dir}\n"
+        f"当前目录下的src子目录：{os.listdir(src_dir)}"
+    )
+else:
+    print(f"成功收集到 {len(sources)} 个源文件，示例：\n{sources[:3]}")  # 打印前3个文件确认
+# ###########################################################################
+
+# 硬编码thrust的include路径（已确认正确）
+THRUST_INCLUDE_DIR = "/home/wai/miniconda3/envs/pct/targets/x86_64-linux/include"
+if not os.path.exists(os.path.join(THRUST_INCLUDE_DIR, "thrust/complex.h")):
+    raise RuntimeError(f"Thrust路径错误：{THRUST_INCLUDE_DIR}/thrust/complex.h 不存在")
+
+setup(
+    name="pointops",
+    version="1.0",
+    install_requires=["torch", "numpy"],
+    packages=["pointops"],
+    package_dir={"pointops": "functions"},
+    ext_modules=[
+        CUDAExtension(
+            name="pointops._C",
+            sources=sources,  # 现在已确保非空
+            include_dirs=[
+                THRUST_INCLUDE_DIR,  # 正确的thrust路径
+                os.path.join(os.environ.get("CONDA_PREFIX", ""), "include"),  # conda基础头文件
+            ],
+            extra_compile_args={
+                "cxx": ["-g", "-O2", "-std=c++17"],
+                "nvcc": ["-O2", "-std=c++17", "-U__CUDA_NO_HALF_OPERATORS__", "-U__CUDA_NO_HALF_CONVERSIONS__"],
+            },
+        )
+    ],
+    cmdclass={"build_ext": BuildExtension},
+)
