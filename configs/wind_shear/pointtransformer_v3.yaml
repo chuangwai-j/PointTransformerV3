@@ -5,8 +5,8 @@ model:
   encoder_depth: [2, 2, 6, 2]
   embed_dim: 32
   num_heads: 4
-  cloud_size: 8192  # 可以根据您的数据调整
-  in_channels: 2    # u, v 两个风速分量
+  cloud_size: 8192
+  in_channels: 6    # u, v + 邻域均值(u, v) + 邻域标准差(u, v)
   num_classes: 2    # 二分类：有风切变/无风切变
 
 data:
@@ -14,20 +14,8 @@ data:
     dataset: WindShearDataset
     split: train
     data_root: "D:/model/wind_datas/csv_labels"
-    transform:
-      - NAME: NormalizeWind
-        u_mean: 0.0  # 根据实际数据调整
-        u_std: 1.0
-        v_mean: 0.0
-        v_std: 1.0
-      - NAME: GridSample
-        grid_size: 0.1  # 根据数据空间分辨率调整
-      - NAME: ToTensor
-
-  val:
-    dataset: WindShearDataset
-    split: val
-    data_root: "D:/model/wind_datas/csv_labels"
+    k_neighbors: 16
+    radius: 0.5
     transform:
       - NAME: NormalizeWind
         u_mean: 0.0
@@ -38,10 +26,12 @@ data:
         grid_size: 0.1
       - NAME: ToTensor
 
-  test:
+  val:
     dataset: WindShearDataset
-    split: test
+    split: val
     data_root: "D:/model/wind_datas/csv_labels"
+    k_neighbors: 16
+    radius: 0.5
     transform:
       - NAME: NormalizeWind
         u_mean: 0.0

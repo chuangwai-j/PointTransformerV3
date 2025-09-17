@@ -1,7 +1,6 @@
-from .wind_shear import NormalizeWind, WindShearGridSample
+from .wind_shear import NormalizeWind
 
 __all__ = [
     ...,
-    'NormalizeWind',
-    'WindShearGridSample'
+    'NormalizeWind'
 ]
