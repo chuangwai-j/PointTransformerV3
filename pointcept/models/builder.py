@@ -4,9 +4,9 @@ Model Builder
 Author: Xiaoyang Wu (xiaoyang.wu.cs@gmail.com)
 Please cite our work if the code is helpful to you.
 """
-
+#from . import BACKBONES, ENCODERS, HEADS, LOSSES, MODELS
 import copy
-from Pointcept.utils.registry import Registry
+from pointcept.utils.registry import Registry
 
 MODELS = Registry("models")
 MODULES = Registry("modules")
@@ -14,4 +14,5 @@ MODULES = Registry("modules")
 
 def build_model(cfg):
     """Build models."""
-    return MODELS.build(copy.deepcopy(cfg))
+    model = MODELS.build(cfg)
+    return model

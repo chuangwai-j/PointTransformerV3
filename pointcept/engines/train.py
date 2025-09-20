@@ -24,14 +24,14 @@ from tensorboardX import SummaryWriter
 
 from .defaults import create_ddp_model, worker_init_fn
 from .hooks import HookBase, build_hooks
-import Pointcept.utils.comm as comm
-from Pointcept.datasets import build_dataset, point_collate_fn, collate_fn
-from Pointcept.models import build_model
-from Pointcept.utils.logger import get_root_logger
-from Pointcept.utils.optimizer import build_optimizer
-from Pointcept.utils.scheduler import build_scheduler
-from Pointcept.utils.events import EventStorage, ExceptionWriter
-from Pointcept.utils.registry import Registry
+import pointcept.utils.comm as comm
+from pointcept.datasets import build_dataset, point_collate_fn, collate_fn
+from pointcept.models import build_model
+from pointcept.utils.logger import get_root_logger
+from pointcept.utils.optimizer import build_optimizer
+from pointcept.utils.scheduler import build_scheduler
+from pointcept.utils.events import EventStorage, ExceptionWriter
+from pointcept.utils.registry import Registry
 
 
 TRAINERS = Registry("trainers")

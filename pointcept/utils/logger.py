@@ -10,6 +10,7 @@ Please cite our work if the code is helpful to you.
 import logging
 import torch
 import torch.distributed as dist
+import os  # 新增：导入os模块处理路径
 
 from termcolor import colored
 
@@ -33,36 +34,20 @@ class _ColorfulFormatter(logging.Formatter):
         return prefix + " " + log
 
 
-def get_logger(name, log_file=None, log_level=logging.INFO, file_mode="a", color=False):
+def get_logger(name, log_file=None, log_dir=None, log_level=logging.INFO, file_mode="a", color=False):
     """Initialize and get a logger by name.
 
-    If the logger has not been initialized, this method will initialize the
-    logger by adding one or two handlers, otherwise the initialized logger will
-    be directly returned. During initialization, a StreamHandler will always be
-    added. If `log_file` is specified and the process rank is 0, a FileHandler
-    will also be added.
+    新增参数:
+        log_dir (str | None): 日志文件保存目录。若指定，将自动生成日志文件名（{name}.log），
+            优先级低于log_file（若同时指定log_file，以log_file为准）。
 
-    Args:
-        name (str): Logger name.
-        log_file (str | None): The log filename. If specified, a FileHandler
-            will be added to the logger.
-        log_level (int): The logger level. Note that only the process of
-            rank 0 is affected, and other processes will set the level to
-            "Error" thus be silent most of the time.
-        file_mode (str): The file mode used in opening log file.
-            Defaults to 'a'.
-        color (bool): Colorful log output. Defaults to True
-
-    Returns:
-        logging.Logger: The expected logger.
+    其他参数说明不变...
     """
     logger = logging.getLogger(name)
 
     if name in logger_initialized:
         return logger
-    # handle hierarchical names
-    # e.g., logger "a" is initialized, then logger "a.b" will skip the
-    # initialization since it is a child of "a".
+    # 处理层级名称（保持原有逻辑）
     for logger_name in logger_initialized:
         if name.startswith(logger_name):
             return logger
@@ -77,14 +62,17 @@ def get_logger(name, log_file=None, log_level=logging.INFO, file_mode="a", color
     else:
         rank = 0
 
-    # only rank 0 will add a FileHandler
+    # 新增：处理log_dir参数，自动生成log_file路径
+    if log_dir is not None and log_file is None:
+        os.makedirs(log_dir, exist_ok=True)  # 确保目录存在
+        log_file = os.path.join(log_dir, f"{name}.log")  # 生成文件名：{name}.log
+
+    # 仅rank=0添加FileHandler（保持原有逻辑）
     if rank == 0 and log_file is not None:
-        # Here, the default behaviour of the official logger is 'a'. Thus, we
-        # provide an interface to change the file mode to the default
-        # behaviour.
         file_handler = logging.FileHandler(log_file, file_mode)
         handlers.append(file_handler)
 
+    # 格式化器（保持原有逻辑）
     plain_formatter = logging.Formatter(
         "[%(asctime)s %(levelname)s %(filename)s line %(lineno)d %(process)d] %(message)s"
     )
@@ -112,18 +100,7 @@ def get_logger(name, log_file=None, log_level=logging.INFO, file_mode="a", color
 
 
 def print_log(msg, logger=None, level=logging.INFO):
-    """Print a log message.
-
-    Args:
-        msg (str): The message to be logged.
-        logger (logging.Logger | str | None): The logger to be used.
-            Some special loggers are:
-            - "silent": no message will be printed.
-            - other str: the logger obtained with `get_root_logger(logger)`.
-            - None: The `print()` method will be used to print log messages.
-        level (int): Logging level. Only available when `logger` is a Logger
-            object or "root".
-    """
+    # 保持原有逻辑不变
     if logger is None:
         print(msg)
     elif isinstance(logger, logging.Logger):
@@ -140,33 +117,22 @@ def print_log(msg, logger=None, level=logging.INFO):
         )
 
 
-def get_root_logger(log_file=None, log_level=logging.INFO, file_mode="a"):
+def get_root_logger(log_file=None, log_dir=None, log_level=logging.INFO, file_mode="a"):
     """Get the root logger.
 
-    The logger will be initialized if it has not been initialized. By default a
-    StreamHandler will be added. If `log_file` is specified, a FileHandler will
-    also be added. The name of the root logger is the top-level package name.
-
-    Args:
-        log_file (str | None): The log filename. If specified, a FileHandler
-            will be added to the root logger.
-        log_level (int): The root logger level. Note that only the process of
-            rank 0 is affected, while other processes will set the level to
-            "Error" and be silent most of the time.
-        file_mode (str): File Mode of logger. (w or a)
-
-    Returns:
-        logging.Logger: The root logger.
+    新增参数:
+        log_dir (str | None): 根日志保存目录（同get_logger逻辑）
     """
     logger = get_logger(
-        name="Pointcept", log_file=log_file, log_level=log_level, file_mode=file_mode
+        name="Pointcept",
+        log_file=log_file,
+        log_dir=log_dir,  # 传递log_dir参数
+        log_level=log_level,
+        file_mode=file_mode
     )
     return logger
 
 
 def _log_api_usage(identifier: str):
-    """
-    Internal function used to log the usage of different detectron2 components
-    inside facebook's infra.
-    """
+    # 保持原有逻辑不变
     torch._C._log_api_usage_once("Pointcept." + identifier)

@@ -20,11 +20,11 @@ if sys.version_info >= (3, 10):
     from collections.abc import Sequence
 else:
     from collections import Sequence
-from Pointcept.utils.timer import Timer
-from Pointcept.utils.comm import is_main_process, synchronize
-from Pointcept.utils.cache import shared_dict
-from Pointcept.utils.scheduler import CosineScheduler
-import Pointcept.utils.comm as comm
+from pointcept.utils.timer import Timer
+from pointcept.utils.comm import is_main_process, synchronize
+from pointcept.utils.cache import shared_dict
+from pointcept.utils.scheduler import CosineScheduler
+import pointcept.utils.comm as comm
 
 from .default import HookBase
 from .builder import HOOKS

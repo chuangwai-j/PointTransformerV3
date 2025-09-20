@@ -8,8 +8,8 @@ except ImportError:
     ocnn = None
 
 from collections import OrderedDict
-from Pointcept.models.utils.structure import Point
-from Pointcept.engines.hooks import HookBase
+from pointcept.models.utils.structure import Point
+from pointcept.engines.hooks import HookBase
 
 
 def is_ocnn_module(module):

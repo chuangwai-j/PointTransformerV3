@@ -15,9 +15,9 @@ from collections import OrderedDict
 
 import torch
 import torch.nn as nn
-from Pointcept.models.utils.structure import Point
-from Pointcept.models.builder import MODELS
-from Pointcept.models.losses import build_criteria
+from pointcept.models.utils.structure import Point
+from pointcept.models.builder import MODELS
+from pointcept.models.losses import build_criteria
 
 
 @MODELS.register_module("PPT-v1m3")

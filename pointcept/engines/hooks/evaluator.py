@@ -12,8 +12,8 @@ import torch.distributed as dist
 import pointops
 from uuid import uuid4
 
-import Pointcept.utils.comm as comm
-from Pointcept.utils.misc import intersection_and_union_gpu
+import pointcept.utils.comm as comm
+from pointcept.utils.misc import intersection_and_union_gpu
 
 from .default import HookBase
 from .builder import HOOKS

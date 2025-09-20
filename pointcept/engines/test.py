@@ -17,12 +17,12 @@ import torch.nn.functional as F
 import torch.utils.data
 
 from .defaults import create_ddp_model
-import Pointcept.utils.comm as comm
-from Pointcept.datasets import build_dataset, collate_fn
-from Pointcept.models import build_model
-from Pointcept.utils.logger import get_root_logger
-from Pointcept.utils.registry import Registry
-from Pointcept.utils.misc import (
+import pointcept.utils.comm as comm
+from pointcept.datasets import build_dataset, collate_fn
+from pointcept.models import build_model
+from pointcept.utils.logger import get_root_logger
+from pointcept.utils.registry import Registry
+from pointcept.utils.misc import (
     AverageMeter,
     intersection_and_union,
     intersection_and_union_gpu,

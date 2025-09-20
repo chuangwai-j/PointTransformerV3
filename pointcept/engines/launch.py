@@ -14,7 +14,7 @@ import torch
 import torch.distributed as dist
 import torch.multiprocessing as mp
 
-from Pointcept.utils import comm
+from pointcept.utils import comm
 
 __all__ = ["DEFAULT_TIMEOUT", "launch"]
 

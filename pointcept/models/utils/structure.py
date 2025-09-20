@@ -1,3 +1,4 @@
+#pointcept/models/utils/structure.py
 import torch
 import spconv.pytorch as spconv
 
@@ -8,8 +9,8 @@ except ImportError:
 from addict import Dict
 from typing import List
 
-from Pointcept.models.utils.serialization import encode
-from Pointcept.models.utils import (
+from pointcept.models.utils.serialization import encode
+from pointcept.models.utils import (
     offset2batch,
     batch2offset,
     offset2bincount,
@@ -50,7 +51,7 @@ class Point(Dict):
         elif "offset" not in self.keys() and "batch" in self.keys():
             self["offset"] = batch2offset(self.batch)
 
-    def serialization(self, order="z", depth=None, shuffle_orders=False):
+    '''def serialization(self, order="z", depth=None, shuffle_orders=False):
         """
         Point Cloud Serialization
 
@@ -99,6 +100,78 @@ class Point(Dict):
             ),
         )
 
+        if shuffle_orders:
+            perm = torch.randperm(code.shape[0])
+            code = code[perm]
+            order = order[perm]
+            inverse = inverse[perm]
+
+        self["serialized_code"] = code
+        self["serialized_order"] = order
+        self["serialized_inverse"] = inverse'''
+
+    def serialization(self, order="z", depth=None, shuffle_orders=False):
+        self["order"] = order
+        assert "batch" in self.keys() and "offset" in self.keys(), "需先初始化offset（从batch或手动设置）"
+        if "grid_coord" not in self.keys():
+            assert {"grid_size", "coord"}.issubset(self.keys())
+            self["grid_coord"] = torch.div(
+                self.coord - self.coord.min(0)[0], self.grid_size, rounding_mode="trunc"
+            ).int()
+
+        if depth is None:
+            depth = int(self.grid_coord.max() + 1).bit_length()
+        self["serialized_depth"] = depth
+        assert depth * 3 + len(self.offset).bit_length() <= 63
+        assert depth <= 16
+
+        # -------------------------- 关键修改：按样本分割序列化 --------------------------
+        code_list = []
+        order_list = []
+        inverse_list = []
+        global_offset = 0  # 累积前面样本的总点数，用于校正全局索引
+
+        # 从offset获取每个样本的范围（start, end）
+        sample_ranges = [(self.offset[i], self.offset[i + 1]) for i in range(len(self.offset) - 1)]
+
+        for idx, (start, end) in enumerate(sample_ranges):
+            # 1. 提取单个样本的局部数据（避免跨样本）
+            sample_points = end - start
+            if sample_points <= 0:
+                warnings.warn(f"样本{idx}点数为{sample_points}，跳过序列化")
+                continue
+            sample_grid_coord = self.grid_coord[start:end]  # 样本内网格坐标
+            # 样本内batch设为0（避免全局batch信息导致索引偏大）
+            sample_batch = torch.zeros(sample_points, dtype=torch.int64, device=self.grid_coord.device)
+
+            # 2. 单个样本的局部序列化（生成样本内的inverse，范围0~sample_points-1）
+            sample_code = [
+                encode(sample_grid_coord, sample_batch, depth, order=order_) for order_ in order
+            ]
+            sample_code = torch.stack(sample_code)  # (order_num, sample_points)
+
+            # 3. 计算样本内的order和inverse
+            sample_order = torch.argsort(sample_code)  # 样本内排序索引
+            sample_inverse = torch.zeros_like(sample_order).scatter_(
+                dim=1,
+                index=sample_order,
+                src=torch.arange(start, end, device=sample_order.device).repeat(sample_code.shape[0], 1)
+            )  # 关键：src用全局start~end，直接生成batch内全局索引
+
+            # 4. 收集单个样本的结果
+            code_list.append(sample_code)
+            order_list.append(sample_order)
+            inverse_list.append(sample_inverse)
+            global_offset = end  # 更新全局偏移
+
+        # 5. 合并所有样本的结果
+        if not code_list:
+            raise ValueError("所有样本点数为0，无法序列化")
+        code = torch.cat(code_list, dim=1)
+        order = torch.cat(order_list, dim=1)
+        inverse = torch.cat(inverse_list, dim=1)
+
+        # -------------------------- 保留原有shuffle逻辑 --------------------------
         if shuffle_orders:
             perm = torch.randperm(code.shape[0])
             code = code[perm]

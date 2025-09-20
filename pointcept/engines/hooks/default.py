@@ -5,7 +5,7 @@ Author: Xiaoyang Wu (xiaoyang.wu.cs@gmail.com)
 Please cite our work if the code is helpful to you.
 """
 
-import Pointcept.utils.comm as comm
+import pointcept.utils.comm as comm
 import weakref
 from .builder import HOOKS
 

@@ -14,9 +14,9 @@ import multiprocessing as mp
 from torch.nn.parallel import DistributedDataParallel
 
 
-import Pointcept.utils.comm as comm
-from Pointcept.utils.env import get_random_seed, set_seed
-from Pointcept.utils.config import Config, DictAction
+import pointcept.utils.comm as comm
+from pointcept.utils.env import get_random_seed, set_seed
+from pointcept.utils.config import Config, DictAction
 
 
 def create_ddp_model(model, *, fp16_compression=False, **kwargs):

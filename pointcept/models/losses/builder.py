@@ -5,7 +5,7 @@ Author: Xiaoyang Wu (xiaoyang.wu.cs@gmail.com)
 Please cite our work if the code is helpful to you.
 """
 
-from Pointcept.utils.registry import Registry
+from pointcept.utils.registry import Registry
 
 LOSSES = Registry("losses")
 

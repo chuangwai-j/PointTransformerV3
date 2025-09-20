@@ -7,23 +7,26 @@ Please cite our work if the code is helpful to you.
 
 from functools import partial
 from addict import Dict
+import logging
 import math
 import torch
 import torch.nn as nn
 import spconv.pytorch as spconv
 import torch_scatter
 from timm.layers import DropPath
+from pointcept.utils.misc import offset2bincount
+import warnings
 
 try:
     import flash_attn
 except ImportError:
     flash_attn = None
 
-from Pointcept.models.point_prompt_training import PDNorm
-from Pointcept.models.builder import MODELS
-from Pointcept.models.utils.misc import offset2bincount
-from Pointcept.models.utils.structure import Point
-from Pointcept.models.modules import PointModule, PointSequential
+from pointcept.models.point_prompt_training import PDNorm
+from pointcept.models.builder import MODELS
+#from pointcept.models.utils.misc import offset2bincount
+from pointcept.models.utils.structure import Point
+from pointcept.models.modules import PointModule, PointSequential
 
 
 class RPE(torch.nn.Module):
@@ -116,87 +119,254 @@ class SerializedAttention(PointModule):
         pad_key = "pad"
         unpad_key = "unpad"
         cu_seqlens_key = "cu_seqlens_key"
-        if (
-            pad_key not in point.keys()
-            or unpad_key not in point.keys()
-            or cu_seqlens_key not in point.keys()
-        ):
+
+        # 仅在首次调用时计算，避免重复计算
+        if (pad_key not in point.keys() or
+                unpad_key not in point.keys() or
+                cu_seqlens_key not in point.keys()):
+
             offset = point.offset
-            bincount = offset2bincount(offset)
+            device = offset.device
+            bincount = offset2bincount(point.offset,check_padding=False)  # 每个样本的点数
+            total_original_points = offset[-1].item()  # 当前batch总点数
+            logging.debug(f"【get_padding】总点数={total_original_points}, unpad长度将设为={total_original_points}")
+
+            # 1. 计算需要padding到的点数（确保是patch_size的倍数）
             bincount_pad = (
-                torch.div(
-                    bincount + self.patch_size - 1,
-                    self.patch_size,
-                    rounding_mode="trunc",
-                )
-                * self.patch_size
+                    torch.div(bincount + self.patch_size - 1,
+                              self.patch_size,
+                              rounding_mode="trunc") * self.patch_size
             )
-            # only pad point when num of points larger than patch_size
+            # 只对点数超过patch_size的样本进行padding
             mask_pad = bincount > self.patch_size
             bincount_pad = ~mask_pad * bincount + mask_pad * bincount_pad
-            _offset = nn.functional.pad(offset, (1, 0))
-            _offset_pad = nn.functional.pad(torch.cumsum(bincount_pad, dim=0), (1, 0))
-            pad = torch.arange(_offset_pad[-1], device=offset.device)
-            unpad = torch.arange(_offset[-1], device=offset.device)
+
+            # 2. 计算偏移量（带padding和不带padding的）
+            _offset = nn.functional.pad(offset, (1, 0))  # 原始偏移量（前补0）
+            _offset_pad = nn.functional.pad(torch.cumsum(bincount_pad, dim=0), (1, 0))  # 带padding的偏移量
+
+
+            # 3. 初始化pad和unpad数组（确保类型为长整数，避免索引错误）
+            total_padded_points = _offset_pad[-1].item()  # 带padding的总点数
+            #pad = torch.arange(total_padded_points, device=device, dtype=torch.long)
+            #unpad = torch.arange(total_original_points, device=device, dtype=torch.long)
+            # 修复：unpad长度必须等于总点数，避免长度不足
+            unpad = torch.zeros(total_original_points, dtype=torch.long, device=device)
+            pad = torch.arange(total_padded_points, device=device, dtype=torch.long)
+
+            # 4. 计算cu_seqlens（用于Flash Attention的序列长度索引）
             cu_seqlens = []
-            for i in range(len(offset)):
-                unpad[_offset[i] : _offset[i + 1]] += _offset_pad[i] - _offset[i]
-                if bincount[i] != bincount_pad[i]:
-                    pad[
-                        _offset_pad[i + 1]
-                        - self.patch_size
-                        + (bincount[i] % self.patch_size) : _offset_pad[i + 1]
-                    ] = pad[
-                        _offset_pad[i + 1]
-                        - 2 * self.patch_size
-                        + (bincount[i] % self.patch_size) : _offset_pad[i + 1]
-                        - self.patch_size
-                    ]
-                pad[_offset_pad[i] : _offset_pad[i + 1]] -= _offset_pad[i] - _offset[i]
-                cu_seqlens.append(
-                    torch.arange(
-                        _offset_pad[i],
-                        _offset_pad[i + 1],
-                        step=self.patch_size,
-                        dtype=torch.int32,
-                        device=offset.device,
-                    )
-                )
+            for i in range(len(offset) - 1):
+                orig_start, orig_end = offset[i], offset[i + 1]  # 原始样本范围
+                pad_start, pad_end = _offset_pad[i], _offset_pad[i + 1]  # padding后样本范围
+                sample_points_orig = orig_end - orig_start
+                sample_points_pad = pad_end - pad_start
+
+                # 3.1 校正unpad：映射原始索引→padding后索引（确保不超界）
+                if sample_points_orig > 0:
+                    offset_val = pad_start - orig_start
+                    # 限制unpad不超过total_original_points
+                    unpad_slice = unpad[orig_start:orig_end] + offset_val
+                    unpad[orig_start:orig_end] = torch.clamp(unpad_slice, 0, total_original_points - 1)
+
+                # 3.2 校正pad：处理padding区域（避免复制越界）
+                if sample_points_orig != sample_points_pad and sample_points_pad > 0:
+                    # 安全计算复制源范围（避免src超出原始样本）
+                    src_start = max(orig_start, orig_end - self.patch_size)  # 取原始样本最后patch_size个点
+                    src_end = orig_end
+                    src_len = src_end - src_start
+
+                    # 安全计算复制目标范围
+                    dst_start = orig_end
+                    dst_end = pad_end
+                    dst_len = dst_end - dst_start
+
+                    # 仅当源和目标都有效时复制
+                    if src_len > 0 and dst_len > 0:
+                        copy_len = min(src_len, dst_len)
+                        # 映射src到padding后的pad索引
+                        pad[dst_start:dst_start + copy_len] = pad[src_start:src_start + copy_len]
+
+                # 3.3 校正pad的样本内偏移（确保与原始索引对齐）
+                if sample_points_pad > 0:
+                    pad_slice = pad[pad_start:pad_end] - (pad_start - orig_start)
+                    pad[pad_start:pad_end] = torch.clamp(pad_slice, 0, total_original_points - 1)
+
+                # 3.4 生成cu_seqlens（确保步长合理）
+                step = max(1, self.patch_size)  # 避免步长为0
+                seq = torch.arange(pad_start, pad_end, step, dtype=torch.int32, device=device)
+                # 确保序列覆盖到pad_end
+                if len(seq) == 0 or seq[-1] < pad_end - 1:
+                    seq = torch.cat([seq, torch.tensor([pad_end - 1], device=device, dtype=torch.int32)])
+                cu_seqlens.append(seq)
+
+                # 4. 合并cu_seqlens（确保最后一个元素是总长度）
+            merged_cu_seqlens = torch.cat(cu_seqlens) if cu_seqlens else torch.tensor([0], device=device,
+                                                                                      dtype=torch.int32)
+            if merged_cu_seqlens[-1] != total_padded_points:
+                merged_cu_seqlens = torch.cat(
+                    [merged_cu_seqlens, torch.tensor([total_padded_points], device=device, dtype=torch.int32)])
+
+            # 最终校验unpad的有效性
+            if (unpad >= total_original_points).any() or (unpad < 0).any():
+                invalid = unpad[(unpad >= total_original_points) | (unpad < 0)]
+                warnings.warn(f"unpad中存在无效索引：{invalid[:5]}（前5个），已自动截断")
+                unpad = torch.clamp(unpad, 0, total_original_points - 1)
+
+            # 保存结果
             point[pad_key] = pad
             point[unpad_key] = unpad
-            point[cu_seqlens_key] = nn.functional.pad(
-                torch.concat(cu_seqlens), (0, 1), value=_offset_pad[-1]
-            )
+            point[cu_seqlens_key] = merged_cu_seqlens
+
         return point[pad_key], point[unpad_key], point[cu_seqlens_key]
 
     def forward(self, point):
+        # 在point.serialization前添加字段检查
+        logging.debug(
+            f"【Point对象字段检查】keys={point.keys()}, 包含grid_size={('grid_size' in point.keys())}, 包含coord={('coord' in point.keys())}")
+
         if not self.enable_flash:
-            self.patch_size = min(
-                offset2bincount(point.offset).min().tolist(), self.patch_size_max
-            )
+            # 计算每个样本的点数（bincount）
+            logging.debug(f"\n【调试日志】当前batch的offset: {point.offset}")
+            bincount = offset2bincount(point.offset, check_padding=False)
+            logging.debug(f"【调试日志】计算出的样本点数bincount: {bincount}")
+
+            # 确保样本点数有效
+            min_points_per_sample = bincount.min().item()
+            if min_points_per_sample <= 0:
+                raise ValueError(f"样本点数异常：存在点数≤0的样本（min_points={min_points_per_sample}）")
+
+            # 计算合理的patch_size
+            self.patch_size = min(min_points_per_sample, self.patch_size_max)
+            self.patch_size = max(self.patch_size, 1)  # 避免patch_size为0
 
         H = self.num_heads
         K = self.patch_size
+        logging.debug(
+            f"当前patch_size (K): {K}, 配置patch_size_max: {self.patch_size_max}, 样本最小点数: {min_points_per_sample}")
+        assert K >= 1, f"patch_size (K) 必须≥1，当前K={K}"
         C = self.channels
 
         pad, unpad, cu_seqlens = self.get_padding_and_inverse(point)
 
-        order = point.serialized_order[self.order_index][pad]
-        inverse = unpad[point.serialized_inverse[self.order_index]]
+        # ====================== 新增：serialized_order索引校验 ======================
+        # 1. 获取当前order_index对应的serialized_order切片
+        serialized_order_slice = point.serialized_order[self.order_index]
+        serialized_order_len = serialized_order_slice.shape[0]
 
-        # padding and reshape feat and batch for serialized point patch
+        # 2. 校验pad的索引是否超出serialized_order_slice的长度
+        if (pad < 0).any() or (pad >= serialized_order_len).any():
+            # 截断超界的pad索引（兜底，避免直接触发CUDA断言）
+            pad = torch.clamp(pad, 0, serialized_order_len - 1)
+            # 打印警告日志，定位问题来源
+            logging.debug(
+                f"pad索引超出serialized_order范围！serialized_order长度={serialized_order_len}，"
+                f"校正前pad范围: [{pad.min()}, {pad.max()}]，校正后范围: [0, {serialized_order_len - 1}]"
+            )
+
+        # 3. 执行索引操作（此时pad已确保在有效范围）
+        order = serialized_order_slice[pad]
+        # =====================================================================
+
+        # ====================== 新增：serialized_inverse索引校验 ======================
+        # 1. 先获取serialized_inverse索引
+        serialized_inverse_idx = point.serialized_inverse[self.order_index]
+        unpad_len = unpad.shape[0]  # unpad的长度（有效索引范围：0 ~ unpad_len-1）
+
+        # 2. 校验serialized_inverse_idx是否超出unpad的有效范围
+        if (serialized_inverse_idx < 0).any() or (serialized_inverse_idx >= unpad_len).any():
+            # 截断超界索引（兜底，避免直接报错）
+            serialized_inverse_idx = torch.clamp(serialized_inverse_idx, 0, unpad_len - 1)
+            # 打印警告，定位问题样本
+            logging.debug(
+                f"serialized_inverse索引超出unpad范围！unpad长度={unpad_len}，"
+                f"校正前最大索引={serialized_inverse_idx.max()}, 最小索引={serialized_inverse_idx.min()}"
+            )
+
+        # 3. 执行unpad映射（此时索引已确保在有效范围）
+        inverse = unpad[serialized_inverse_idx]
+        # =====================================================================
+
+        # ====================== 新增：样本内索引最终校正 ======================
+        feat_len = point.feat.shape[0]
+        offset = point.offset
+        # 核心修复：从point.feat获取设备（确保与输入数据在同一设备）
+        device = point.feat.device
+        # 生成每个点的样本归属标记
+        sample_id = torch.zeros(feat_len, dtype=torch.int64, device=device)
+        for i in range(1, len(offset)):
+            sample_id[offset[i - 1]:offset[i]] = i - 1
+
+        # 逐样本校正inverse：确保每个样本的inverse在自身范围内
+        for i in range(len(offset) - 1):
+            sample_mask = (sample_id == i)
+            sample_inverse = inverse[sample_mask]
+            # 样本内有效范围：[offset[i], offset[i+1])
+            valid_min = offset[i]
+            valid_max = offset[i + 1] - 1
+            # 截断超界索引（兜底）
+            sample_inverse_clamped = torch.clamp(sample_inverse, valid_min, valid_max)
+            inverse[sample_mask] = sample_inverse_clamped
+        # =====================================================================
+
+        # ====================== 新增：inverse索引关键校验 ======================
+        # 1. 检查inverse与feat的长度匹配
+        feat_len = point.feat.shape[0]
+        inverse_len = inverse.shape[0]
+        if inverse_len != feat_len:
+            raise ValueError(
+                f"inverse长度与feat不匹配！"
+                f"inverse长度={inverse_len}, feat点数={feat_len}"
+            )
+
+        # 2. 检查索引范围（核心修复）
+        invalid_mask = (inverse < 0) | (inverse >= feat_len)
+        if invalid_mask.any():
+            # 收集无效索引信息
+            invalid_indices = inverse[invalid_mask]
+            first_invalid = invalid_indices[:5]  # 取前5个示例
+            invalid_count = invalid_indices.numel()
+            # 打印样本边界辅助调试
+            sample_ranges = [f"样本{i}: [{point.offset[i]}, {point.offset[i + 1]})"
+                             for i in range(len(point.offset) - 1)]
+            raise ValueError(
+                f"inverse索引越界！有效范围应在[0, {feat_len})，"
+                f"共发现{invalid_count}个无效索引，示例: {first_invalid}\n"
+                f"样本边界: {sample_ranges}"
+            )
+        # =====================================================================
+
+        # 样本点数与注意力头数匹配检查
+        logging.debug("=" * 50)
+        logging.debug(f"当前注意力头数H: {self.num_heads}")
+        logging.debug(f"offset: {point['offset']}")
+        sample_points = [point['offset'][i + 1] - point['offset'][i] for i in range(len(point['offset']) - 1)]
+        logging.debug(f"每个样本的点数: {sample_points}")
+        for i, sp in enumerate(sample_points):
+            if sp % self.num_heads != 0:
+                logging.debug(f"❌ 样本{i}点数{sp}不能被头数{self.num_heads}整除！K={sp // self.num_heads}")
+            else:
+                logging.debug(f"✅ 样本{i}点数{sp}，K={sp // self.num_heads}")
+
+        # 特征维度一致性检查
+        logging.debug(f"coord点数: {point['coord'].shape[0]}")
+        logging.debug(f"feat点数: {point['feat'].shape[0]}")
+        logging.debug(f"label点数: {point['label'].shape[0]}")
+        logging.debug(f"beamaz点数: {point['beamaz'].shape[0] if 'beamaz' in point else '无'}")
+        logging.debug(f"inverse形状: {inverse.shape}, 最大索引: {inverse.max()}, 最小索引: {inverse.min()}")
+        logging.debug("=" * 50)
+
+        # 注意力计算逻辑
         qkv = self.qkv(point.feat)[order]
 
         if not self.enable_flash:
-            # encode and reshape qkv: (N', K, 3, H, C') => (3, N', H, K, C')
             q, k, v = (
                 qkv.reshape(-1, K, 3, H, C // H).permute(2, 0, 3, 1, 4).unbind(dim=0)
             )
-            # attn
             if self.upcast_attention:
                 q = q.float()
                 k = k.float()
-            attn = (q * self.scale) @ k.transpose(-2, -1)  # (N', H, K, K)
+            attn = (q * self.scale) @ k.transpose(-2, -1)
             if self.enable_rpe:
                 attn = attn + self.rpe(self.get_rel_pos(point, order))
             if self.upcast_softmax:
@@ -213,14 +383,16 @@ class SerializedAttention(PointModule):
                 softmax_scale=self.scale,
             ).reshape(-1, C)
             feat = feat.to(qkv.dtype)
+
+        # 使用经过校验的inverse索引
         feat = feat[inverse]
 
-        # ffn
+        # 后续处理
         feat = self.proj(feat)
         feat = self.proj_drop(feat)
         point.feat = feat
+        logging.debug(f"SerializedAttention输出point.feat形状: {point.feat.shape}")
         return point
-
 
 class MLP(nn.Module):
     def __init__(
@@ -311,31 +483,49 @@ class Block(PointModule):
                 drop=proj_drop,
             )
         )
-        self.drop_path = PointSequential(
+        '''self.drop_path = PointSequential(
             DropPath(drop_path) if drop_path > 0.0 else nn.Identity()
-        )
+        )'''
+        self.drop_path = DropPath(drop_path) if drop_path > 0.0 else nn.Identity()
 
     def forward(self, point: Point):
-        shortcut = point.feat
+        logging.debug(f"Block输入point类型: {type(point)}")  # 应输出 <class 'pointcept.models.utils.structure.Point'>
+        shortcut = point.feat  # 保存原始feat（用于残差连接）
+        # 1. CPE层：正常处理Point对象
         point = self.cpe(point)
-        point.feat = shortcut + point.feat
-        shortcut = point.feat
+        point.feat = shortcut + point.feat  # 残差连接
+        shortcut = point.feat  # 更新shortcut为CPE处理后的feat
+
+        # 2. 注意力层 + DropPath：手动处理Point对象，不破坏结构
         if self.pre_norm:
             point = self.norm1(point)
-        point = self.drop_path(self.attn(point))
-        point.feat = shortcut + point.feat
+        # 关键修改：先获取attn处理后的Point对象，再单独对feat应用drop_path
+        point_attn = self.attn(point)  # 得到Point对象
+        # 只对feat应用drop_path，保留Point对象其他字段
+        point_attn.feat = self.drop_path(point_attn.feat)
+        # 残差连接：更新feat
+        point_attn.feat = shortcut + point_attn.feat
+        # 传递更新后的Point对象
+        point = point_attn
         if not self.pre_norm:
             point = self.norm1(point)
 
+        # 3. MLP层 + DropPath：同样手动处理，保留Point对象
         shortcut = point.feat
         if self.pre_norm:
             point = self.norm2(point)
-        point = self.drop_path(self.mlp(point))
-        point.feat = shortcut + point.feat
+        # 关键修改：先获取mlp处理后的Point对象，再对feat应用drop_path
+        point_mlp = self.mlp(point)  # 得到Point对象
+        point_mlp.feat = self.drop_path(point_mlp.feat)
+        # 残差连接
+        point_mlp.feat = shortcut + point_mlp.feat
+        point = point_mlp
         if not self.pre_norm:
             point = self.norm2(point)
+
+        # 4. 更新sparse_conv_feat（原逻辑不变）
         point.sparse_conv_feat = point.sparse_conv_feat.replace_feature(point.feat)
-        return point
+        return point  # 确保返回的是Point对象
 
 
 class SerializedPooling(PointModule):
@@ -381,6 +571,20 @@ class SerializedPooling(PointModule):
             point.keys()
         ), "Run point.serialization() point cloud before SerializedPooling"
 
+        # -------------------------- 新增：计算下采样后的offset --------------------------
+        # 1. 从原始point获取正确的offset，计算原始样本点数
+        orig_offset = point.offset  # 原始offset（如[0,1920,3840]）
+        orig_bincount = offset2bincount(orig_offset, check_padding=False)  # 原始样本点数（如[1920,1920]）
+        # 2. 计算下采样后的每个样本点数（原始点数 // 下采样比例stride）
+        downsampled_bincount = orig_bincount // self.stride  # 如[960,960]（stride=2时）
+        # 3. 生成下采样后的新offset（累加下采样后的点数）
+        new_offset = torch.cat(
+            [torch.tensor([0], device=orig_offset.device),
+             torch.cumsum(downsampled_bincount, dim=0)],
+            dim=0
+        )  # 新offset如[0,960,1920]
+        # -------------------------- 新增结束 --------------------------
+
         code = point.serialized_code >> pooling_depth * 3
         code_, cluster, counts = torch.unique(
             code[0],
@@ -425,6 +629,7 @@ class SerializedPooling(PointModule):
             serialized_inverse=inverse,
             serialized_depth=point.serialized_depth - pooling_depth,
             batch=point.batch[head_indices],
+            offset=new_offset  # 关键：添加下采样后的正确offset
         )
 
         if "condition" in point.keys():
@@ -515,10 +720,12 @@ class Embedding(PointModule):
         return point
 
 
-@MODELS.register_module("PT-v3m1")
+@MODELS.register_module('PT-v3m1')
 class PointTransformerV3(PointModule):
     def __init__(
         self,
+        # 新增：添加 num_classes 参数（默认2，适配你的二分类）
+        num_classes=2,
         in_channels=6,
         order=("z", "z-trans"),
         stride=(2, 2, 2, 2),
@@ -551,20 +758,18 @@ class PointTransformerV3(PointModule):
         pdnorm_conditions=("ScanNet", "S3DIS", "Structured3D"),
     ):
         super().__init__()
+        # 保存 num_classes 到实例变量
+        #self.num_classes = num_classes
         self.num_stages = len(enc_depths)
         self.order = [order] if isinstance(order, str) else order
         self.cls_mode = cls_mode
         self.shuffle_orders = shuffle_orders
 
         assert self.num_stages == len(stride) + 1
-        assert self.num_stages == len(enc_depths)
-        assert self.num_stages == len(enc_channels)
-        assert self.num_stages == len(enc_num_head)
-        assert self.num_stages == len(enc_patch_size)
-        assert self.cls_mode or self.num_stages == len(dec_depths) + 1
-        assert self.cls_mode or self.num_stages == len(dec_channels) + 1
-        assert self.cls_mode or self.num_stages == len(dec_num_head) + 1
-        assert self.cls_mode or self.num_stages == len(dec_patch_size) + 1
+        assert self.num_stages == len(enc_depths) == len(enc_channels) == len(enc_num_head) == len(enc_patch_size)
+        if not self.cls_mode:
+            assert self.num_stages == len(dec_depths) + 1 == len(dec_channels) + 1 == len(dec_num_head) + 1 == len(
+                dec_patch_size) + 1
 
         # norm layers
         if pdnorm_bn:
@@ -592,6 +797,7 @@ class PointTransformerV3(PointModule):
         # activation layers
         act_layer = nn.GELU
 
+        # 嵌入层（
         self.embedding = Embedding(
             in_channels=in_channels,
             embed_channels=enc_channels[0],
@@ -647,18 +853,21 @@ class PointTransformerV3(PointModule):
             if len(enc) != 0:
                 self.enc.add(module=enc, name=f"enc{s}")
 
-        # decoder
+        # decoder解码器
+        self.dec = None
+        self.original_dec_channels = dec_channels  # 保存原始解码器通道配置
         if not self.cls_mode:
             dec_drop_path = [
                 x.item() for x in torch.linspace(0, drop_path, sum(dec_depths))
             ]
             self.dec = PointSequential()
+            # 注意：这里拼接了编码器最后一层通道，但仅用于解码器内部计算
             dec_channels = list(dec_channels) + [enc_channels[-1]]
             for s in reversed(range(self.num_stages - 1)):
                 dec_drop_path_ = dec_drop_path[
-                    sum(dec_depths[:s]) : sum(dec_depths[: s + 1])
+                    sum(dec_depths[:s]) : sum(dec_depths[: s + 1][::-1])
                 ]
-                dec_drop_path_.reverse()
+                #dec_drop_path_.reverse()
                 dec = PointSequential()
                 dec.add(
                     SerializedUnpooling(
@@ -696,6 +905,15 @@ class PointTransformerV3(PointModule):
                     )
                 self.dec.add(module=dec, name=f"dec{s}")
 
+        # 新增：分类头（在解码器之后，将特征映射到类别数）
+        # 注意：这部分是新增的，放在解码器代码后面，而非替换
+        if not self.cls_mode:
+            # 解码器最后一个阶段的输出通道数是 dec_channels[0]
+            self.head = nn.Linear(self.original_dec_channels[0], 1)
+        else:
+            # 分类模式下使用编码器最后一层的通道数
+            self.head = nn.Linear(enc_channels[-1], 1)
+
     def forward(self, data_dict):
         point = Point(data_dict)
         point.serialization(order=self.order, shuffle_orders=self.shuffle_orders)
@@ -703,7 +921,7 @@ class PointTransformerV3(PointModule):
 
         point = self.embedding(point)
         point = self.enc(point)
-        if not self.cls_mode:
+        if not self.cls_mode and self.dec is not None:
             point = self.dec(point)
         # else:
         #     point.feat = torch_scatter.segment_csr(
@@ -711,4 +929,9 @@ class PointTransformerV3(PointModule):
         #         indptr=nn.functional.pad(point.offset, (1, 0)),
         #         reduce="mean",
         #     )
-        return point
+
+        # 新增：通过分类头输出预测结果
+        # 风切变检测是“点级预测”，每个点输出一个二分类结果（0/1）
+        #point.feat = self.head(point.feat)  # (N_points, num_classes)
+        logits = self.head(point.feat)
+        return logits  # 返回Point对象，而非张量
