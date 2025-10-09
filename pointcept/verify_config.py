@@ -70,7 +70,7 @@ def verify_data_compatibility(data_dict, model_cfg, csv_path):
     print(f"✅ 特征维度正确：{feat_np.shape[1]}维（与模型in_channels一致）")
 
     # 标签验证
-    label = data_dict["label"]
+    label = data_dict["generate_label"]
     expected_num_classes = model_cfg["num_classes"]
     label_np = label.numpy() if torch.is_tensor(label) else label
     assert np.all(np.isin(label_np, range(expected_num_classes))), \
@@ -103,13 +103,13 @@ def visualize_config_impact(raw_data, processed_data, save_path="config_impact.p
     fig, axes = plt.subplots(1, 2, figsize=(16, 6))
 
     axes[0].scatter(raw_data["coord"][:, 0], raw_data["coord"][:, 1],
-                    c=raw_data["label"], cmap="coolwarm", s=10, alpha=0.6)
+                    c=raw_data["generate_label"], cmap="coolwarm", s=10, alpha=0.6)
     axes[0].set_title(f"原始数据（无Transform）\n点数：{len(raw_data['coord'])}")
     axes[0].set_xlabel("X")
     axes[0].set_ylabel("Y")
 
     axes[1].scatter(processed_data["coord"][:, 0], processed_data["coord"][:, 1],
-                    c=processed_data["label"], cmap="coolwarm", s=10, alpha=0.6)
+                    c=processed_data["generate_label"], cmap="coolwarm", s=10, alpha=0.6)
     axes[1].set_title("Processed Data (GridSample Applied)")
     axes[1].set_xlabel("X")
     axes[1].set_ylabel("Y")
@@ -147,7 +147,7 @@ if __name__ == "__main__":
         verify_dataset_config(dataset, split, data_cfg)
 
         data_dict = dataset[0]
-        required_keys = ["coord", "feat", "label", "path", "beamaz"]  # 新增beamaz检查
+        required_keys = ["coord", "feat", "generate_label", "path", "beamaz"]  # 新增beamaz检查
         for key in required_keys:
             assert key in data_dict, f"数据字典缺少关键字段：{key}"
         print("✅ 数据字典字段完整（含新增beamaz）")
@@ -163,7 +163,7 @@ if __name__ == "__main__":
         verify_dataloader_config(dataloader, config["train"], split)
 
         batch_data = next(iter(dataloader))
-        assert batch_data["coord"].shape[0] == batch_data["feat"].shape[0] == batch_data["label"].shape[0], \
+        assert batch_data["coord"].shape[0] == batch_data["feat"].shape[0] == batch_data["generate_label"].shape[0], \
             "批量数据拼接错误：coord/feat/label点数不匹配"
         print("✅ 批量数据处理正确")
 

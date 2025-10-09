@@ -15,7 +15,7 @@ sample_idx = 0
 data_dict = dataset[sample_idx]  # 这一步会执行 __getitem__，看到你加的打印
 feat = data_dict['feat']
 coord = data_dict['coord']
-label = data_dict['label']
+label = data_dict['generate_label']
 beamaz = data_dict['beamaz']
 
 # 3. 打印真实的 feat 信息（验证5维结构）

@@ -8,7 +8,7 @@ from mpl_toolkits.mplot3d import Axes3D
 # -------------------------------------------------
 # 1. 读入数据
 # -------------------------------------------------
-file = r'/mnt/d/model/wind_datas/csv_labels/20230301/datas1/period1_labeled.csv'
+file = r'/mnt/d/model/wind_datas/csv_labels/20230301/datas1/period2_labeled.csv'
 df = pd.read_csv(file)
 
 # 确保label列非空

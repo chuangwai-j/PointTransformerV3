@@ -37,10 +37,10 @@ def compute_shear(df):
         shear_list.append(shear)
 
     df['shear'] = shear_list
-    df['label'] = df['shear'].apply(encode_shear_label)
+    df['generate_label'] = df['shear'].apply(encode_shear_label)
 
     # 指定要保留的列（仅控制列名和顺序，不影响分隔符）
-    return df[['x', 'y', 'z', 'u', 'v', 'BeamAz', 'shear', 'label']]
+    return df[['x', 'y', 'z', 'u', 'v', 'BeamAz', 'shear', 'generate_label']]
 
 
 # 主处理函数

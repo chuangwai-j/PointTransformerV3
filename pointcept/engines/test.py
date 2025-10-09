@@ -175,7 +175,7 @@ class SemSegTester(TesterBase):
             pred_save_path = os.path.join(save_path, "{}_pred.npy".format(data_name))
             if os.path.isfile(pred_save_path):
                 logger.info(
-                    "{}/{}: {}, loaded pred and label.".format(
+                    "{}/{}: {}, loaded pred and generate_label.".format(
                         idx + 1, len(self.test_loader), data_name
                     )
                 )
@@ -259,7 +259,7 @@ class SemSegTester(TesterBase):
                         "sequences",
                         sequence_name,
                         "predictions",
-                        f"{frame_name}.label",
+                        f"{frame_name}.generate_label",
                     )
                 )
             elif self.cfg.data.test.type == "NuScenesDataset":
@@ -417,7 +417,7 @@ class DINOSemSegTester(TesterBase):
             pred_save_path = os.path.join(save_path, "{}_pred.npy".format(data_name))
             if os.path.isfile(pred_save_path):
                 logger.info(
-                    "{}/{}: {}, loaded pred and label.".format(
+                    "{}/{}: {}, loaded pred and generate_label.".format(
                         idx + 1, len(self.test_loader), data_name
                     )
                 )
@@ -504,7 +504,7 @@ class DINOSemSegTester(TesterBase):
                         "sequences",
                         sequence_name,
                         "predictions",
-                        f"{frame_name}.label",
+                        f"{frame_name}.generate_label",
                     )
                 )
             elif self.cfg.data.test.type == "NuScenesDataset":

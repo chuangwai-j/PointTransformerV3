@@ -51,6 +51,19 @@ class Point(Dict):
         elif "offset" not in self.keys() and "batch" in self.keys():
             self["offset"] = batch2offset(self.batch)
 
+        # 🌟 2. 关键修改：显式强制保留path字段（解决多进程序列化丢失问题）
+        # 从args（如传入的data_dict）中提取path
+        if args:
+            data_dict = args[0] if isinstance(args[0], dict) else {}
+            if "path" in data_dict:
+                self["path"] = data_dict["path"]
+        # 从kwargs中提取path（防止其他传入方式）
+        if "path" in kwargs:
+            self["path"] = kwargs["path"]
+        # 双重保险：如果self中已有path但被标记为删除，强制恢复
+        if "path" in self:
+            self["path"] = self["path"]  # 确保引用不被垃圾回收
+
     '''def serialization(self, order="z", depth=None, shuffle_orders=False):
         """
         Point Cloud Serialization

@@ -207,7 +207,7 @@ def import_modules_from_strings(imports, allow_failed_imports=False):
         elif hasattr(values[0], '__array__'):
             if key in ['coord', 'feat', 'beamaz']:
                 result[key] = torch.cat([torch.from_numpy(v).float() for v in values], dim=0)
-            elif key == 'label':
+            elif key == 'generate_label':
                 result[key] = torch.cat([torch.from_numpy(v).long() for v in values], dim=0)
             else:
                 result[key] = values
@@ -229,98 +229,121 @@ def collate_fn(batch):
     """
     适配风切变数据的批处理函数：
     1. 过滤空样本，避免点数≤0；2. 校验补点逻辑（点数为384的倍数）；
-    3. 正确区分字段维度（coord/feat为2维，label/beamaz为1维）；4. 确保offset严格递增
+    3. 正确区分字段维度（coord/feat为2维，generate_label/beamaz为1维）；4. 确保offset严格递增
     """
+    import warnings
+    import logging
+    import torch
+    import numpy as np
+    import os
 
-    # -------------------------- 新增：第一步过滤None样本 --------------------------
-    # 先移除__getitem__返回的None（采样点数不足的样本）
+    # -------------------------- 第一步：过滤None样本 --------------------------
     batch = [item for item in batch if item is not None]
     if not batch:
         warnings.warn("当前batch所有样本均为无效（点数不足），返回空batch，需在训练循环中跳过")
-        return None  # 返回空，训练循环中处理
-    # --------------------------------------------------------------------------
+        # 🌟 关键：返回包含path的空字典，而非None
+        return {'path': [], 'coord': torch.empty((0, 3)), 'offset': torch.tensor([0])}
 
-    # 1. 过滤无效/空样本
+    # -------------------------- 第二步：检查并补全path --------------------------
+    for idx, item in enumerate(batch):
+        if 'path' not in item:
+            item['path'] = f"缺失路径样本_{idx}"
+            warnings.warn(f"batch中样本{idx}丢失path，已用默认名称兜底")
+        # 打印每个样本的coord范围（依赖os，现在导入正常）
+        num_points = item['coord'].shape[0] if isinstance(item['coord'], torch.Tensor) else len(item['coord'])
+        # 兼容numpy和Tensor的min/max获取（避免维度不匹配）
+        if isinstance(item['coord'], torch.Tensor):
+            coord_min = item['coord'].min(axis=0).values
+            coord_max = item['coord'].max(axis=0).values
+        else:  # numpy数组
+            coord_min = item['coord'].min(axis=0)
+            coord_max = item['coord'].max(axis=0)
+        # 这里os.path.basename可正常调用，不会报错
+        logging.debug(
+            f"样本{idx}（{os.path.basename(item['path'])}）：点数={num_points}，"
+            f"coord范围=x[{coord_min[0]:.0f}~{coord_max[0]:.0f}], "
+            f"y[{coord_min[1]:.0f}~{coord_max[1]:.0f}], z[{coord_min[2]:.0f}~{coord_max[2]:.0f}]"
+        )
+
+    # -------------------------- 第三步：过滤无效样本（新增path校验） --------------------------
     valid_batch = []
     for idx, item in enumerate(batch):
-        if not isinstance(item, dict) or 'coord' not in item:
-            warnings.warn(f"过滤无效样本{idx}：非dict或缺失coord字段", UserWarning)
+        # 🌟 关键修复2：显式校验path存在（避免后续sample_paths收集空值）
+        if not isinstance(item, dict) or 'path' not in item or 'coord' not in item:
+            warnings.warn(f"过滤无效样本{idx}：非dict或缺失path/coord字段", UserWarning)
             continue
-        # 统一点数计算逻辑（适配Tensor/numpy数组）
         num_points = item['coord'].shape[0] if isinstance(item['coord'], torch.Tensor) else len(item['coord'])
         if num_points <= 0:
-            warnings.warn(f"过滤空样本{idx}：点数={num_points}", UserWarning)
+            # 用os.path.basename显示具体样本，方便定位
+            warnings.warn(
+                f"过滤空样本{idx}（{os.path.basename(item['path'])}）：点数={num_points}",
+                UserWarning
+            )
             continue
         valid_batch.append(item)
     if not valid_batch:
         raise ValueError("当前batch无有效样本！请检查数据预处理/补点流程")
 
-    # 2. 初始化变量，校验单样本合法性
+    # -------------------------- 第四步：初始化变量+校验单样本合法性 --------------------------
     result = {}
     offsets = [0]
     total_points = 0
     sample_sizes = []
-    device = valid_batch[0]['coord'].device if isinstance(valid_batch[0]['coord'], torch.Tensor) else torch.device(
-        'cpu')
+    sample_paths = []  # 单独记录路径，避免拼接时混淆
+    device = valid_batch[0]['coord'].device if isinstance(valid_batch[0]['coord'], torch.Tensor) else torch.device('cpu')
 
     for idx, item in enumerate(valid_batch):
-        # 2.1 校验点数是否为384的倍数（适配补点逻辑）
+        # 4.1 校验点数是否为384的倍数
         num_points = item['coord'].shape[0] if isinstance(item['coord'], torch.Tensor) else len(item['coord'])
         if num_points % 384 != 0:
             raise ValueError(
-                f"样本{idx}点数异常：{num_points}（需为384的倍数，如1536/1920）\n"
+                f"样本{idx}（{os.path.basename(item['path'])}）点数异常：{num_points}（需为384的倍数，如1536/1920）\n"
                 "请检查补点代码是否正常执行"
             )
         sample_sizes.append(num_points)
         total_points += num_points
         offsets.append(total_points)
+        sample_paths.append(item['path'])  # 记录当前样本路径
 
-        # 2.2 统一字段类型+维度校验（核心修改：区分字段维度要求）
-        for key in ['coord', 'feat', 'label', 'beamaz', 'grid_size']:
+        # 4.2 统一字段类型+维度校验（核心逻辑不变，补充beamaz的显式校验）
+        for key in ['coord', 'feat', 'generate_label', 'beamaz', 'grid_size']:
             if key not in item:
-                raise KeyError(f"样本{idx}缺失必要字段：{key}")
+                raise KeyError(f"样本{idx}（{os.path.basename(item['path'])}）缺失必要字段：{key}")
 
-            # numpy转Tensor，统一类型
+            # numpy转Tensor
             if isinstance(item[key], np.ndarray):
-                if key == 'label':
-                    dtype = torch.long
-                elif key in ['coord', 'feat', 'beamaz', 'grid_size']:
-                    dtype = torch.float32
-                else:
-                    dtype = torch.float32
+                dtype = torch.long if key == 'generate_label' else torch.float32
                 item[key] = torch.from_numpy(item[key]).to(dtype).to(device)
             elif not isinstance(item[key], torch.Tensor):
-                raise TypeError(f"样本{idx}的{key}类型异常：需Tensor/numpy数组")
+                raise TypeError(f"样本{idx}（{os.path.basename(item['path'])}）的{key}类型异常：需Tensor/numpy数组")
 
-            # -------------------------- 核心修改：维度校验逻辑 --------------------------
+            # 维度校验（补充beamaz的详细日志）
             if key == 'coord':
-                # coord：2维 (N, 3)，N=点数，3=x/y/z
-                if item[key].dim() != 2 or item[key].shape[0] != num_points or item[key].shape[1] != 3:
+                if item[key].dim() != 2 or item[key].shape != (num_points, 3):
                     raise ValueError(
-                        f"样本{idx}的coord异常：维度={item[key].dim()}，形状={item[key].shape}\n"
-                        f"需为2维张量 (点数, 3)，当前点数={num_points}，应满足形状=({num_points}, 3)"
+                        f"样本{idx}（{os.path.basename(item['path'])}）coord异常：形状={item[key].shape}\n"
+                        f"需为 (点数, 3)，当前点数={num_points}，应满足 ({num_points}, 3)"
                     )
             elif key == 'feat':
-                # feat：2维 (N, C)，N=点数，C=特征维度（如9）
                 if item[key].dim() != 2 or item[key].shape[0] != num_points:
                     raise ValueError(
-                        f"样本{idx}的feat异常：维度={item[key].dim()}，形状={item[key].shape}\n"
-                        f"需为2维张量 (点数, 特征维度)，当前点数={num_points}，应满足形状=({num_points}, C)（如C=9）"
+                        f"样本{idx}（{os.path.basename(item['path'])}）feat异常：形状={item[key].shape}\n"
+                        f"需为 (点数, C)，当前点数={num_points}"
                     )
-            elif key in ['label', 'beamaz']:
-                # label/beamaz：1维 (N,)，N=点数
+            elif key in ['generate_label', 'beamaz']:
                 if item[key].dim() != 1 or item[key].shape[0] != num_points:
                     raise ValueError(
-                        f"样本{idx}的{key}异常：维度={item[key].dim()}，形状={item[key].shape}\n"
-                        f"需为1维张量 (点数,)，当前点数={num_points}，应满足形状=({num_points},)"
+                        f"样本{idx}（{os.path.basename(item['path'])}）{key}异常：形状={item[key].shape}\n"
+                        f"需为 (点数,)，当前点数={num_points}"
                     )
             elif key == 'grid_size':
-                # grid_size：1维 (3,)，3=x/y/z网格大小
                 if item[key].dim() != 1 or item[key].shape[0] != 3:
-                    raise ValueError(f"样本{idx}的grid_size异常：需1维张量 (3,)，实际形状={item[key].shape}")
-            # --------------------------------------------------------------------------
+                    raise ValueError(
+                        f"样本{idx}（{os.path.basename(item['path'])}）grid_size异常：形状={item[key].shape}\n"
+                        "需为 (3,)（x/y/z网格大小）"
+                    )
 
-    # 3. 生成offset并校验
+    # -------------------------- 第五步：生成offset并校验 --------------------------
     result['offset'] = torch.tensor(offsets, dtype=torch.int64, device=device)
     if not (torch.diff(result['offset']) > 0).all():
         raise ValueError(f"offset生成异常（需严格递增）：{result['offset'].tolist()}")
@@ -329,44 +352,54 @@ def collate_fn(batch):
             f"offset总点数不匹配：offset[-1]={result['offset'][-1]}，实际总点数={total_points}"
         )
 
-    # 4. 拼接点级字段（正确处理2维/1维张量）
-    # coord/feat：2维 (N_total, 3) / (N_total, C)，按dim=0拼接
+    # -------------------------- 第六步：拼接点级字段 --------------------------
+    # 6.1 拼接coord/feat/generate_label/beamaz（只调用一次模型前向，避免冗余）
     result['coord'] = torch.cat([item['coord'] for item in valid_batch], dim=0)
     result['feat'] = torch.cat([item['feat'] for item in valid_batch], dim=0)
-    # label/beamaz：1维 (N_total,)，按dim=0拼接
-    result['label'] = torch.cat([item['label'] for item in valid_batch], dim=0)
+    result['generate_label'] = torch.cat([item['generate_label'] for item in valid_batch], dim=0)
     result['beamaz'] = torch.cat([item['beamaz'] for item in valid_batch], dim=0)
 
-    # 5. 校验拼接后维度
+    # 6.2 检查标签有效性（补充样本路径日志）
+    if torch.isnan(result['generate_label']).any():
+        nan_indices = torch.where(torch.isnan(result['generate_label']))[0]
+        print(f"⚠️ 标签含NaN！首批NaN索引：{nan_indices[:5]}，样本路径：{sample_paths}")
+    if (result['generate_label'] < 0).any() or (result['generate_label'] >= 5).any():
+        invalid_indices = torch.where((result['generate_label'] < 0) | (result['generate_label'] >= 5))[0]
+        invalid_values = result['generate_label'][invalid_indices[:5]]
+        print(f"⚠️ 标签越界！首批越界值：{invalid_values}，样本路径：{sample_paths}")
+
+    # -------------------------- 第七步：校验拼接后维度 --------------------------
     assert result['coord'].shape == (total_points, 3), f"coord拼接异常：{result['coord'].shape} != ({total_points}, 3)"
     assert result['feat'].shape[0] == total_points, f"feat拼接异常：{result['feat'].shape[0]} != {total_points}"
-    assert result['label'].shape == (total_points,), f"label拼接异常：{result['label'].shape} != ({total_points},)"
+    assert result['generate_label'].shape == (total_points,), f"label拼接异常：{result['generate_label'].shape} != ({total_points},)"
     assert result['beamaz'].shape == (total_points,), f"beamaz拼接异常：{result['beamaz'].shape} != ({total_points},)"
 
-    # 6. 处理grid_size（支持同/不同样本场景）
-    # 6. 处理grid_size（核心修改：强制转为张量，避免列表类型）
+    # -------------------------- 第八步：处理grid_size --------------------------
     grid_sizes = [item['grid_size'] for item in valid_batch]
-    # 方案：无论样本间是否一致，均取第一个样本的grid_size（确保为张量类型，适配Point对象）
-    # 理由：grid_size是预处理的网格参数，单batch内差异对模型影响极小，优先保证字段有效性
     result['grid_size'] = grid_sizes[0].clone().detach().float()
-    # 移除之前的“列表保留逻辑”，避免grid_size为列表
-    # （可选）打印警告，提示样本间grid_size差异
     if not all(torch.equal(gs, result['grid_size']) for gs in grid_sizes):
         logging.debug(
             f"当前batch样本grid_size不一致（已取第一个样本的{result['grid_size']}作为统一值）\n"
-            f"各样本grid_size：{[gs.tolist() for gs in grid_sizes]}"
+            f"各样本grid_size：{[gs.tolist() for gs in grid_sizes]}, 样本路径：{sample_paths}"
         )
 
-    # 7. 保留path字段（字符串列表）
-    if 'path' in valid_batch[0]:
-        result['path'] = [item['path'] for item in valid_batch]
+    # -------------------------- 第九步：拼接path（全量打印，避免遗漏） --------------------------
+    result['path'] = sample_paths  # 直接用之前记录的全量路径
+    # 🌟 关键修复3：添加path传递确认日志，确保result包含path
+    logging.debug(f"Batch路径列表：{[os.path.basename(p) for p in result['path']]}，共{len(result['path'])}个样本")
 
-    # 8. 调试日志
+    # -------------------------- 第十步：调试日志（增强训练/验证对比） --------------------------
+    # 计算当前batch的整体coord范围（训练/验证对比关键）
+    batch_coord_min = result['coord'].min(axis=0).values
+    batch_coord_max = result['coord'].max(axis=0).values
     logging.info(f"✅ Batch生成成功：样本数={len(valid_batch)}，总点数={total_points}")
-    logging.info(f"   各样本点数：{sample_sizes}（均为384的倍数）")
-    logging.info(f"   拼接后维度：coord={result['coord'].shape}，feat={result['feat'].shape}，label={result['label'].shape}")
+    logging.info(f"   各样本信息：点数={sample_sizes}，路径={[os.path.basename(p) for p in sample_paths]}")
+    logging.info(f"   整体coord范围：x[{batch_coord_min[0]:.0f}~{batch_coord_max[0]:.0f}], y[{batch_coord_min[1]:.0f}~{batch_coord_max[1]:.0f}], z[{batch_coord_min[2]:.0f}~{batch_coord_max[2]:.0f}]")
+    logging.info(f"   拼接后维度：coord={result['coord'].shape}，feat={result['feat'].shape}，generate_label={result['generate_label'].shape}")
     logging.info(f"   Offset：{result['offset'].tolist()}")
 
+    # 最后返回前打印（覆盖所有分支）
+    #print(f"collate_fn最终返回：path存在？{'path' in result}，path内容：{result.get('path', '无')}")
     return result
 
 

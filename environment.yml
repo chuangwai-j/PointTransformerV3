@@ -1,7 +1,7 @@
 name: Pointcept-torch2.5.0-cu12.4
 channels:
   - pytorch
-  - nvidia/label/cuda-12.4.1
+  - nvidia/generate_label/cuda-12.4.1
   - nvidia
   - bioconda
   - conda-forge

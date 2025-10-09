@@ -26,9 +26,15 @@ class ToTensor(object):
     """Convert numpy arrays to torch tensors."""
 
     def __call__(self, data_dict):
+        # 保存原始path
+        original_path = data_dict.get('path', '未知路径')
+
         for key in data_dict:
             if isinstance(data_dict[key], np.ndarray):
                 data_dict[key] = torch.from_numpy(data_dict[key])
+
+        # 强制保留path
+        data_dict['path'] = original_path
         return data_dict
 
 
@@ -40,6 +46,10 @@ class GridSample(object):
         self.grid_size = grid_size
 
     def __call__(self, data_dict):
+        # 保存非点级字段（如path），避免被采样逻辑影响
+        non_point_fields = {}
+        if 'path' in data_dict:
+            non_point_fields['path'] = data_dict['path']  # 单独保存path
         if 'coord' in data_dict:
             coord = data_dict['coord']
             if len(coord) > 0:
@@ -58,4 +68,6 @@ class GridSample(object):
                 for key in data_dict:
                     if isinstance(data_dict[key], np.ndarray) and len(data_dict[key]) == len(coord):
                         data_dict[key] = data_dict[key][sampled_indices]
+        # 恢复非点级字段（确保path被保留）
+        data_dict.update(non_point_fields)
         return data_dict

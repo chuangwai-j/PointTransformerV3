@@ -4,7 +4,7 @@ Point Transformer - V3 Mode1
 Author: Xiaoyang Wu (xiaoyang.wu.cs@gmail.com)
 Please cite our work if the code is helpful to you.
 """
-
+import os
 from functools import partial
 from addict import Dict
 import logging
@@ -16,6 +16,8 @@ import torch_scatter
 from timm.layers import DropPath
 from pointcept.utils.misc import offset2bincount
 import warnings
+from torch.fx import wrap
+from spconv.pytorch import SparseConvTensor
 
 try:
     import flash_attn
@@ -24,7 +26,6 @@ except ImportError:
 
 from pointcept.models.point_prompt_training import PDNorm
 from pointcept.models.builder import MODELS
-#from pointcept.models.utils.misc import offset2bincount
 from pointcept.models.utils.structure import Point
 from pointcept.models.modules import PointModule, PointSequential
 
@@ -91,9 +92,6 @@ class SerializedAttention(PointModule):
             self.patch_size = patch_size
             self.attn_drop = attn_drop
         else:
-            # when disable flash attention, we still don't want to use mask
-            # consequently, patch size will auto set to the
-            # min number of patch_size_max and number of points
             self.patch_size_max = patch_size
             self.patch_size = 0
             self.attn_drop = torch.nn.Dropout(attn_drop)
@@ -351,7 +349,7 @@ class SerializedAttention(PointModule):
         # 特征维度一致性检查
         logging.debug(f"coord点数: {point['coord'].shape[0]}")
         logging.debug(f"feat点数: {point['feat'].shape[0]}")
-        logging.debug(f"label点数: {point['label'].shape[0]}")
+        logging.debug(f"label点数: {point['generate_label'].shape[0]}")
         logging.debug(f"beamaz点数: {point['beamaz'].shape[0] if 'beamaz' in point else '无'}")
         logging.debug(f"inverse形状: {inverse.shape}, 最大索引: {inverse.max()}, 最小索引: {inverse.min()}")
         logging.debug("=" * 50)
@@ -390,7 +388,27 @@ class SerializedAttention(PointModule):
         # 后续处理
         feat = self.proj(feat)
         feat = self.proj_drop(feat)
+        # 🌟 新增：注意力层输出数值校验（防止nan/inf传递）
+        if torch.isnan(feat).any() or torch.isinf(feat).any():
+            nan_count = torch.isnan(feat).sum().item()
+            inf_count = torch.isinf(feat).sum().item()
+            sample_paths = point.get('path', ['未知路径'])
+            logging.error(
+                f"SerializedAttention输出feat异常！样本路径={sample_paths[:2]}, "
+                f"含NaN={nan_count}个, 含inf={inf_count}个, feat范围=[{feat.min().item():.4f}, {feat.max().item():.4f}]"
+            )
         point.feat = feat
+        '''
+        # ====================== 新增：打印嵌入层后的特征（终端输出） ======================
+        embed_feat = point.feat
+        print(f"[模型阶段] 嵌入层后特征统计：")
+        print(f"  特征形状: {embed_feat.shape}")
+        print(f"  最小值: {embed_feat.min().cpu().item():.4f}")
+        print(f"  最大值: {embed_feat.max().cpu().item():.4f}")
+        print(f"  均值:   {embed_feat.mean().cpu().item():.4f}")
+        print(f"  标准差: {embed_feat.std().cpu().item():.4f}")
+        # ==============================================================================
+        '''
         logging.debug(f"SerializedAttention输出point.feat形状: {point.feat.shape}")
         return point
 
@@ -412,11 +430,20 @@ class MLP(nn.Module):
         self.drop = nn.Dropout(drop)
 
     def forward(self, x):
+        # 🌟 新增：MLP输入数值校验
+        if torch.isnan(x).any() or torch.isinf(x).any():
+            logging.error(f"MLP输入异常：含NaN={torch.isnan(x).any().item()}, 含inf={torch.isinf(x).any().item()}")
+
         x = self.fc1(x)
         x = self.act(x)
         x = self.drop(x)
         x = self.fc2(x)
         x = self.drop(x)
+
+        # 🌟 新增：MLP输出数值校验
+        if torch.isnan(x).any() or torch.isinf(x).any():
+            logging.error(f"MLP输出异常：含NaN={torch.isnan(x).any().item()}, 含inf={torch.isinf(x).any().item()}")
+
         return x
 
 
@@ -487,12 +514,23 @@ class Block(PointModule):
             DropPath(drop_path) if drop_path > 0.0 else nn.Identity()
         )'''
         self.drop_path = DropPath(drop_path) if drop_path > 0.0 else nn.Identity()
+        # 新增：注意力层后添加LayerNorm
+        self.attn_norm = PointSequential(nn.LayerNorm(channels))
+        # 新增：MLP层后添加LayerNorm
+        self.mlp_norm = PointSequential(nn.LayerNorm(channels))
 
     def forward(self, point: Point):
         logging.debug(f"Block输入point类型: {type(point)}")  # 应输出 <class 'pointcept.models.utils.structure.Point'>
         shortcut = point.feat  # 保存原始feat（用于残差连接）
         # 1. CPE层：正常处理Point对象
         point = self.cpe(point)
+
+        # 🌟 新增：CPE层输出校验
+        if torch.isnan(point.feat).any() or torch.isinf(point.feat).any():
+            sample_paths = point.get('path', ['未知路径'])
+            logging.error(
+                f"Block-CPE层输出异常！样本路径={sample_paths[:2]}, feat含NaN={torch.isnan(point.feat).any().item()}")
+
         point.feat = shortcut + point.feat  # 残差连接
         shortcut = point.feat  # 更新shortcut为CPE处理后的feat
 
@@ -501,6 +539,7 @@ class Block(PointModule):
             point = self.norm1(point)
         # 关键修改：先获取attn处理后的Point对象，再单独对feat应用drop_path
         point_attn = self.attn(point)  # 得到Point对象
+        point_attn = self.attn_norm(point_attn)  # 新增：稳定注意力层输出
         # 只对feat应用drop_path，保留Point对象其他字段
         point_attn.feat = self.drop_path(point_attn.feat)
         # 残差连接：更新feat
@@ -516,12 +555,19 @@ class Block(PointModule):
             point = self.norm2(point)
         # 关键修改：先获取mlp处理后的Point对象，再对feat应用drop_path
         point_mlp = self.mlp(point)  # 得到Point对象
+        point_mlp = self.mlp_norm(point_mlp)  # 新增：稳定MLP层输出
         point_mlp.feat = self.drop_path(point_mlp.feat)
         # 残差连接
         point_mlp.feat = shortcut + point_mlp.feat
         point = point_mlp
         if not self.pre_norm:
             point = self.norm2(point)
+
+        # 🌟 新增：Block输出校验
+        if torch.isnan(point.feat).any() or torch.isinf(point.feat).any():
+            sample_paths = point.get('path', ['未知路径'])
+            logging.error(
+                f"Block最终输出异常！样本路径={sample_paths[:2]}, feat含NaN={torch.isnan(point.feat).any().item()}")
 
         # 4. 更新sparse_conv_feat（原逻辑不变）
         point.sparse_conv_feat = point.sparse_conv_feat.replace_feature(point.feat)
@@ -629,7 +675,8 @@ class SerializedPooling(PointModule):
             serialized_inverse=inverse,
             serialized_depth=point.serialized_depth - pooling_depth,
             batch=point.batch[head_indices],
-            offset=new_offset  # 关键：添加下采样后的正确offset
+            offset=new_offset,  # 关键：添加下采样后的正确offset
+            path = point.get('path', ['未知路径'])  # 🌟 新增：保留样本路径，用于异常定位
         )
 
         if "condition" in point.keys():
@@ -641,6 +688,12 @@ class SerializedPooling(PointModule):
             point_dict["pooling_inverse"] = cluster
             point_dict["pooling_parent"] = point
         point = Point(point_dict)
+
+        # 🌟 新增：Pooling输出校验
+        if torch.isnan(point.feat).any() or torch.isinf(point.feat).any():
+            logging.error(
+                f"SerializedPooling输出异常！样本路径={point['path'][:2]}, feat含NaN={torch.isnan(point.feat).any().item()}")
+
         if self.norm is not None:
             point = self.norm(point)
         if self.act is not None:
@@ -678,9 +731,22 @@ class SerializedUnpooling(PointModule):
         assert "pooling_inverse" in point.keys()
         parent = point.pop("pooling_parent")
         inverse = point.pop("pooling_inverse")
+
+        # 🌟 新增：Unpooling输入校验
+        if torch.isnan(point.feat).any() or torch.isinf(point.feat).any():
+            logging.error(f"SerializedUnpooling输入异常！point.feat含NaN={torch.isnan(point.feat).any().item()}")
+        if torch.isnan(parent.feat).any() or torch.isinf(parent.feat).any():
+            logging.error(f"SerializedUnpooling父样本异常！parent.feat含NaN={torch.isnan(parent.feat).any().item()}")
+
         point = self.proj(point)
         parent = self.proj_skip(parent)
         parent.feat = parent.feat + point.feat[inverse]
+
+        # 🌟 新增：Unpooling输出校验
+        if torch.isnan(parent.feat).any() or torch.isinf(parent.feat).any():
+            sample_paths = parent.get('path', ['未知路径'])
+            logging.error(
+                f"SerializedUnpooling输出异常！样本路径={sample_paths[:2]}, feat含NaN={torch.isnan(parent.feat).any().item()}")
 
         if self.traceable:
             parent["unpooling_parent"] = point
@@ -716,7 +782,20 @@ class Embedding(PointModule):
             self.stem.add(act_layer(), name="act")
 
     def forward(self, point: Point):
+        # 🌟 新增：嵌入层输入校验
+        if torch.isnan(point.feat).any() or torch.isinf(point.feat).any():
+            sample_paths = point.get('path', ['未知路径'])
+            logging.error(
+                f"Embedding输入异常！样本路径={sample_paths[:2]}, feat含NaN={torch.isnan(point.feat).any().item()}")
+
         point = self.stem(point)
+
+        # 🌟 新增：嵌入层输出校验
+        if torch.isnan(point.feat).any() or torch.isinf(point.feat).any():
+            sample_paths = point.get('path', ['未知路径'])
+            logging.error(
+                f"Embedding输出异常！样本路径={sample_paths[:2]}, feat含NaN={torch.isnan(point.feat).any().item()}")
+
         return point
 
 
@@ -724,29 +803,28 @@ class Embedding(PointModule):
 class PointTransformerV3(PointModule):
     def __init__(
         self,
-        # 新增：添加 num_classes 参数（默认2，适配你的二分类）
-        num_classes=2,
+        num_classes=5,  # 明确为5分类（0-4）
         in_channels=6,
         order=("z", "z-trans"),
-        stride=(2, 2, 2, 2),
-        enc_depths=(2, 2, 2, 6, 2),
-        enc_channels=(32, 64, 128, 256, 512),
-        enc_num_head=(2, 4, 8, 16, 32),
-        enc_patch_size=(48, 48, 48, 48, 48),
-        dec_depths=(2, 2, 2, 2),
-        dec_channels=(64, 64, 128, 256),
-        dec_num_head=(4, 4, 8, 16),
-        dec_patch_size=(48, 48, 48, 48),
+        stride=(2, 2, 2),
+        enc_depths=(1, 1, 3, 1),
+        enc_channels=(32, 64, 128, 256),
+        enc_num_head=(2, 4, 8, 16),
+        enc_patch_size=(48, 48, 48, 48),
+        dec_depths=(1, 1, 1),
+        dec_channels=(64, 64, 128),
+        dec_num_head=(4, 4, 8),
+        dec_patch_size=(48, 48, 48),
         mlp_ratio=4,
         qkv_bias=True,
         qk_scale=None,
         attn_drop=0.0,
         proj_drop=0.0,
-        drop_path=0.3,
+        drop_path=0.5,
         pre_norm=True,
         shuffle_orders=True,
         enable_rpe=False,
-        enable_flash=True,
+        enable_flash=True,  # 修正：用户未安装flash_attn，设为False
         upcast_attention=False,
         upcast_softmax=False,
         cls_mode=False,
@@ -758,20 +836,20 @@ class PointTransformerV3(PointModule):
         pdnorm_conditions=("ScanNet", "S3DIS", "Structured3D"),
     ):
         super().__init__()
-        # 保存 num_classes 到实例变量
-        #self.num_classes = num_classes
+        self.num_classes = num_classes  # 保存类别数
         self.num_stages = len(enc_depths)
         self.order = [order] if isinstance(order, str) else order
         self.cls_mode = cls_mode
         self.shuffle_orders = shuffle_orders
 
+        # 校验参数长度（确保编码器/解码器参数匹配）
         assert self.num_stages == len(stride) + 1
         assert self.num_stages == len(enc_depths) == len(enc_channels) == len(enc_num_head) == len(enc_patch_size)
         if not self.cls_mode:
             assert self.num_stages == len(dec_depths) + 1 == len(dec_channels) + 1 == len(dec_num_head) + 1 == len(
                 dec_patch_size) + 1
 
-        # norm layers
+        # 归一化层配置
         if pdnorm_bn:
             bn_layer = partial(
                 PDNorm,
@@ -797,7 +875,7 @@ class PointTransformerV3(PointModule):
         # activation layers
         act_layer = nn.GELU
 
-        # 嵌入层（
+        # 嵌入层
         self.embedding = Embedding(
             in_channels=in_channels,
             embed_channels=enc_channels[0],
@@ -805,7 +883,7 @@ class PointTransformerV3(PointModule):
             act_layer=act_layer,
         )
 
-        # encoder
+        # 编码器
         enc_drop_path = [
             x.item() for x in torch.linspace(0, drop_path, sum(enc_depths))
         ]
@@ -853,7 +931,7 @@ class PointTransformerV3(PointModule):
             if len(enc) != 0:
                 self.enc.add(module=enc, name=f"enc{s}")
 
-        # decoder解码器
+        # 解码器
         self.dec = None
         self.original_dec_channels = dec_channels  # 保存原始解码器通道配置
         if not self.cls_mode:
@@ -867,7 +945,6 @@ class PointTransformerV3(PointModule):
                 dec_drop_path_ = dec_drop_path[
                     sum(dec_depths[:s]) : sum(dec_depths[: s + 1][::-1])
                 ]
-                #dec_drop_path_.reverse()
                 dec = PointSequential()
                 dec.add(
                     SerializedUnpooling(
@@ -905,33 +982,104 @@ class PointTransformerV3(PointModule):
                     )
                 self.dec.add(module=dec, name=f"dec{s}")
 
-        # 新增：分类头（在解码器之后，将特征映射到类别数）
-        # 注意：这部分是新增的，放在解码器代码后面，而非替换
+        # 分类头（多分类，0-4共5类）
         if not self.cls_mode:
-            # 解码器最后一个阶段的输出通道数是 dec_channels[0]
-            self.head = nn.Linear(self.original_dec_channels[0], 1)
+            self.head = nn.Linear(self.original_dec_channels[0], self.num_classes)  # 输出5个通道（对应5类）
         else:
-            # 分类模式下使用编码器最后一层的通道数
-            self.head = nn.Linear(enc_channels[-1], 1)
+            self.head = nn.Linear(enc_channels[-1], self.num_classes)  # 输出5个通道（对应5类）
 
     def forward(self, data_dict):
+        # 🌟 新增：打印接收的字段，确认path是否存在
+        #print(f"模型接收的data_dict字段：{list(data_dict.keys())}")  # 关键调试
+        # 🌟 首先检查path是否存在且有效
+        if 'path' not in data_dict or data_dict['path'][0] == '未知路径':
+            raise ValueError(f"样本path丢失！当前data_dict中的path: {data_dict.get('path', '无')}")
+        # 🌟 关键1：保留样本路径，用于异常定位
+        sample_paths = data_dict.get('path', ['未知路径'])
+        # 打印前1个样本的path，确认有效
+        logging.info(f"当前batch样本路径: {[os.path.basename(p) for p in sample_paths[:1]]}")
+        # 🌟 关键2：计算并打印spatial_shape（验证集核心调试信息）
+        coord = data_dict['coord']
+        spatial_shape = [
+            int(coord[:, 2].max().item()) + 1,  # z轴（spconv默认z/y/x顺序，必须对应）
+            int(coord[:, 1].max().item()) + 1,  # y轴
+            int(coord[:, 0].max().item()) + 1  # x轴（注意：coord是[x,y,z]，需调整顺序）
+        ]
+        # 区分训练/验证模式，打印spatial_shape（关键：验证是否过大）
+        mode = "训练集" if self.training else "验证集"
+        logging.info(
+            f"【{mode}】样本路径={[os.path.basename(p) for p in sample_paths[:2]]}, "
+            f"总点数={coord.shape[0]}, spatial_shape={spatial_shape}（z/y/x）"
+        )
+        # 检查spatial_shape是否过大（超过2000视为异常，需后续裁剪coord）
+        #TODO
+        '''
+        if any(dim > 2000 for dim in spatial_shape):
+            logging.warning(
+                f"⚠️ {mode} spatial_shape过大！各维度应≤2000，当前={spatial_shape}，可能导致logits=nan"
+            )
+        '''
+        # 1. 构建Point对象（保留path字段）
+        data_dict['path'] = sample_paths  # 确保path传入Point对象
         point = Point(data_dict)
+        # 2. 保留序列化逻辑（原有代码，处理点云顺序）
         point.serialization(order=self.order, shuffle_orders=self.shuffle_orders)
-        point.sparsify()
+        # 🌟 关键3：替换point.sparsify()，手动构建SparseConvTensor（带allow_empty=True）
+        # 3.1 生成样本索引（batch_idx）：每个点属于哪个样本
+        batch_size = len(point.offset) - 1  # offset长度=样本数+1，如[0,1920,3840]对应2个样本
+        batch_idx = []
+        for i in range(batch_size):
+            start = point.offset[i].item()  # 第i个样本的起始点索引
+            end = point.offset[i + 1].item()  # 第i个样本的结束点索引
+            batch_idx.extend([i] * (end - start))  # 为每个点分配样本索引
+        # 转换为张量并调整形状（[N,1]，N为总点数）
+        batch_idx = torch.tensor(batch_idx, device=point.coord.device, dtype=torch.int32).unsqueeze(1)
 
+        # 3.2 构建indices（spconv要求格式：[z, y, x, batch_idx]，共4列）
+        # 注意：coord原始格式是[x,y,z]，需调整为[z,y,x]
+        z_coord = point.coord[:, 2].unsqueeze(1).to(torch.int32)  # 第3列是z
+        y_coord = point.coord[:, 1].unsqueeze(1).to(torch.int32)  # 第2列是y
+        x_coord = point.coord[:, 0].unsqueeze(1).to(torch.int32)  # 第1列是x
+        indices = torch.cat([z_coord, y_coord, x_coord, batch_idx], dim=1)  # 拼接为[N,4]
+
+        #point.sparsify()
+
+        # 3.3 手动创建SparseConvTensor，显式设置allow_empty=True
+        # 步骤1：先创建空的SparseConvTensor（用默认参数）
+        sparse_tensor = spconv.SparseConvTensor(
+            features=point.feat,  # 点云特征（[N, C]）
+            indices=indices,  # 坐标+样本索引（[N,4]）
+            spatial_shape=spatial_shape,  # 体素网格大小（z/y/x）
+            batch_size=batch_size,  # 批次大小
+        )
+        # 步骤2：手动设置allow_empty=True（绕过fx对__init__的追踪）
+        sparse_tensor.allow_empty = True  # 直接修改属性，而非通过__init__参数
+
+        # 赋值给point.sparse_conv_feat
+        point.sparse_conv_feat = sparse_tensor
+
+        # 4.嵌入层
         point = self.embedding(point)
+        # 5.编码器
         point = self.enc(point)
+        # 6.解码器（分割模式）
         if not self.cls_mode and self.dec is not None:
             point = self.dec(point)
-        # else:
-        #     point.feat = torch_scatter.segment_csr(
-        #         src=point.feat,
-        #         indptr=nn.functional.pad(point.offset, (1, 0)),
-        #         reduce="mean",
-        #     )
 
-        # 新增：通过分类头输出预测结果
-        # 风切变检测是“点级预测”，每个点输出一个二分类结果（0/1）
-        #point.feat = self.head(point.feat)  # (N_points, num_classes)
+        # 7.分类头计算logits
         logits = self.head(point.feat)
-        return logits  # 返回Point对象，而非张量
+
+        # 8.logits数值校验（最终输出检查）
+        if torch.isnan(logits).any() or torch.isinf(logits).any():
+            nan_count = torch.isnan(logits).sum().item()
+            inf_count = torch.isinf(logits).sum().item()
+            logging.error(
+                f"❌ {mode} logits异常！样本路径={sample_paths[:2]}, "
+                f"含NaN={nan_count}个, 含inf={inf_count}个, logits范围=[{logits.min().item():.4f}, {logits.max().item():.4f}]"
+            )
+        else:
+            logging.info(
+                f"✅ {mode} logits正常！范围=[{logits.min().item():.4f}, {logits.max().item():.4f}], 形状={logits.shape}"
+            )
+
+        return logits  # 返回对象，而非张量

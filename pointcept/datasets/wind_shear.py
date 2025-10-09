@@ -100,52 +100,102 @@ class WindShearDataset(Dataset):
             neighbor_feat = feat[neighbor_indices]
             mean_feat = np.mean(neighbor_feat, axis=0)
             std_feat = np.std(neighbor_feat, axis=0)
+            # 新增：处理std=0的情况（替换为1e-6，避免除以0）
+            std_feat = np.where(std_feat == 0, 1e-6, std_feat)
             feat_i = feat[i].squeeze()
             new_feat[i] = np.concatenate([feat_i, mean_feat, std_feat])
 
             # 2. 优化标签逻辑：邻域内风切变点占比≥0.3才标1（阈值可调整）
-            neighbor_labels = label[neighbor_indices]
-            shear_ratio = np.sum(neighbor_labels == 1) / len(neighbor_labels)  # 计算邻域风切变占比
-            new_label[i] = 1 if shear_ratio >= 0.3 else 0  # 占比阈值设为0.3（可根据数据调整）
+            #neighbor_labels = generate_label[neighbor_indices]
+            #shear_ratio = np.sum(neighbor_labels == 1) / len(neighbor_labels)  # 计算邻域风切变占比
+            #new_label[i] = 1 if shear_ratio >= 0.3 else 0  # 占比阈值设为0.3（可根据数据调整）
+
+            # 新多分类逻辑：取邻域中出现次数最多的类别（多数投票）
+            neighbor_labels = label[neighbor_indices]  # 邻域内所有点的原始标签（0-4）
+            # 统计邻域中每个类别的出现次数
+            counts = np.bincount(neighbor_labels, minlength=5)  # minlength=5确保0-4类都被统计
+            # 取次数最多的类别作为当前点的标签（若有平局，取最小类别）
+            most_common_label = np.argmax(counts)
+            new_label[i] = most_common_label
+
+        # 新增：邻域计算后检查是否引入NaN/inf
+        if np.isnan(feat).any() or np.isinf(feat).any():
+            nan_mask = np.isnan(feat).any(axis=1) | np.isinf(feat).any(axis=1)
+            feat = feat[~nan_mask]
+            coord = coord[~nan_mask]
+            label = label[~nan_mask]
+            beamaz = beamaz[~nan_mask]
+            logging.warning(f"邻域计算后过滤了{nan_mask.sum()}个含NaN/inf的点")
 
         return new_feat, new_label
 
     def __len__(self):
         return len(self.data_list)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx, warnings=None):
         csv_path = self.data_list[idx]
+        try:
+            # 读取CSV数据
+            data = pd.read_csv(csv_path)
+        except Exception as e:
+            logging.error(f"读取样本{csv_path}失败：{str(e)}，已跳过")
+            return None  # 读取失败直接跳过
 
-        # 读取CSV数据
-        data = pd.read_csv(csv_path)
-
-        # 新增：打印当前文件的列名（只在调试时用，之后可以删除）
-        logging.debug(f"\nCSV文件路径：{csv_path}")
-        #print("列名列表：", data.columns.tolist())  # 这行是关键
-
-        # 提取坐标、风速和标签
-        # 注意：列名可能有空格，也可能没有，这里尝试两种可能
-        # 读取坐标（x,y,z）
+        # 提取坐标（x,y,z），强化异常处理
         try:
             coord = data[["x", "y", "z"]].values.astype(np.float32)
         except KeyError:
             coord = data[[" x", " y", " z"]].values.astype(np.float32)
+        # 🌟 新增1：检查坐标是否有NaN/inf（源头过滤）
+        coord_nan = np.isnan(coord).any(axis=1)
+        coord_inf = np.isinf(coord).any(axis=1)
+        if np.any(coord_nan | coord_inf):
+            valid_mask = ~(coord_nan | coord_inf)
+            coord = coord[valid_mask]
+            logging.warning(f"样本{csv_path}原始坐标含{len(coord) - valid_mask.sum()}个NaN/inf点，已过滤")
 
-        # 读取特征（u, v, beamaz）- 新增beamaz
+        # 提取特征（u, v, beamaz）
         try:
             u = data["u"].values.astype(np.float32)
             v = data["v"].values.astype(np.float32)
-            beamaz = data["BeamAz"].values.astype(np.float32)  # 新增beamaz读取
+            beamaz = data["BeamAz"].values.astype(np.float32)
         except KeyError:
             u = data[" u"].values.astype(np.float32)
             v = data[" v"].values.astype(np.float32)
-            beamaz = data["BeamAz"].values.astype(np.float32)  # 处理带空格列名
+            beamaz = data["BeamAz"].values.astype(np.float32)
+        # 🌟 新增2：检查u/v/beamaz是否有NaN/inf
+        feat_nan = np.isnan(u) | np.isnan(v) | np.isnan(beamaz)
+        feat_inf = np.isinf(u) | np.isinf(v) | np.isinf(beamaz)
+        if np.any(feat_nan | feat_inf):
+            valid_mask = ~(feat_nan | feat_inf)
+            u = u[valid_mask]
+            v = v[valid_mask]
+            beamaz = beamaz[valid_mask]
+            coord = coord[valid_mask]  # 同步过滤坐标
+            logging.warning(f"样本{csv_path}原始特征含{len(u) - valid_mask.sum()}个NaN/inf点，已过滤")
 
         # 组合原始特征（u, v, beamaz）- 维度从2变为3
         feat = np.column_stack([u, v, beamaz])
 
-        # 读取标签
-        label = data["wind_shear_label"].values.astype(np.int64)
+        # 读取标签并检查有效性
+        try:
+            label = data["label"].values.astype(np.int64)
+        except KeyError:
+            label = data[" label"].values.astype(np.int64)
+        # 过滤无效标签（0-4外）并同步过滤其他字段
+        valid_label_mask = (label >= 0) & (label <= 4)
+        if not np.all(valid_label_mask):
+            invalid_count = len(label) - valid_label_mask.sum()
+            label = label[valid_label_mask]
+            feat = feat[valid_label_mask]
+            coord = coord[valid_label_mask]
+            beamaz = beamaz[valid_label_mask]
+            logging.warning(f"样本{csv_path}含{invalid_count}个无效标签（非0-4），已过滤")
+
+        # 若过滤后无有效点，直接跳过
+        if len(coord) == 0:
+            logging.warning(f"样本{csv_path}过滤后无有效点，已跳过")
+            return None
 
         # 计算邻域特征（传入beamaz参与邻域计算）
         feat, label = self._compute_neighborhood_features(coord, beamaz, feat, label)
@@ -154,20 +204,34 @@ class WindShearDataset(Dataset):
         data_dict = {
             'coord': coord,
             'feat': feat,  # 此时feat为9维
-            'label': label,
+            'generate_label': label,
             'path': csv_path,
             'beamaz': beamaz  # 保留原始beamaz供调试
         }
 
         # 执行采样等变换后，添加点数校验
-        data_dict = self.transform(data_dict)
+        if self.transform is not None:
+            try:
+                data_dict = self.transform(data_dict)
+            except Exception as e:
+                logging.error(f"样本{csv_path}变换失败：{str(e)}，已跳过")
+                return None
+
+        # 🌟 强制恢复path（防止变换中意外丢失）
+        data_dict['path'] = csv_path
 
         # 新增：检查采样后点数是否满足最小要求
         sampled_num = len(data_dict['coord'])
         if sampled_num < self.min_points:  # 现在self.min_points已定义
-            # 打印警告信息（可选）
-            import warnings
-            warnings.warn(f"样本{data_dict['path']}采样后点数({sampled_num})不足，已跳过")  # 修正为data_dict['path']
+            logging.warning(f"样本{data_dict['path']}采样后点数({sampled_num})不足，已跳过")  # 修正为data_dict['path']
             return None  # 返回None标记为无效样本
+
+        # 最终校验：确保所有字段无NaN/inf
+        final_nan = (np.isnan(data_dict['coord']).any()
+                     | np.isnan(data_dict['feat']).any()
+                     | np.isnan(data_dict['generate_label']).any())
+        if final_nan:
+            logging.error(f"样本{csv_path}最终数据含NaN，已跳过")
+            return None
 
         return data_dict
