@@ -195,6 +195,43 @@ class Point(Dict):
         self["serialized_order"] = order
         self["serialized_inverse"] = inverse
 
+    # 🌟 新增：排序邻域提取方法（核心功能）
+    def get_sorted_neighbors(self, k=16):
+        """
+        PTV3作者的排序邻域提取：用z-order排序后的前后点作为邻域，替代传统k邻域
+        参数:
+            k: 每个点的邻域点数（建议为偶数，如16）
+        返回:
+            neighbor_indices: 邻域索引，shape=[total_points, k]，每个元素是原始点的索引
+        """
+        if "serialized_order" not in self or "offset" not in self:
+            raise RuntimeError("需先调用serialization()")
+        k_half = k // 2
+        sorted_order = self["serialized_order"][0]
+        total_points = sorted_order.shape[0]
+        device = sorted_order.device
+
+        # 计算每个点在sorted_order中的位置（仅保留核心步骤）
+        sorted_pos = torch.zeros(total_points, dtype=torch.long, device=device)
+        sorted_pos[sorted_order] = torch.arange(total_points, device=device)
+
+        # 生成邻域位置（简化边界处理）
+        start = torch.clamp(sorted_pos - k_half, 0, total_points)
+        end = torch.clamp(sorted_pos + k_half + 1, 0, total_points)
+        pos_range = torch.arange(k, device=device).unsqueeze(0)
+        neighbor_pos = start.unsqueeze(1) + pos_range
+        neighbor_pos = torch.min(neighbor_pos, end.unsqueeze(1) - 1)
+
+        # 生成邻域索引（跳过跨样本校验，或仅在验证集启用）
+        neighbor_indices = sorted_order[neighbor_pos]
+
+        # 仅保留必要的越界校验
+        if (neighbor_indices < 0).any() or (neighbor_indices >= total_points).any():
+            raise ValueError(f"邻域索引越界：{neighbor_indices.min()} ~ {neighbor_indices.max()}")
+
+        self["neighbor_indices"] = neighbor_indices.contiguous()  # 确保内存连续
+        return neighbor_indices
+
     def sparsify(self, pad=96):
         """
         Point Cloud Serialization
