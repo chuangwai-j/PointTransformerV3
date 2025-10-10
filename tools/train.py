@@ -10,6 +10,20 @@ from datetime import datetime
 from tqdm import tqdm
 from sklearn.metrics import recall_score, precision_score, f1_score
 import warnings
+import matplotlib.pyplot as plt
+
+# 解决matplotlib无GUI环境报错问题（服务器/终端训练必备）
+plt.switch_backend('Agg')
+# --------- 新增：设置中文字体 ---------
+plt.rcParams["font.family"] = [
+    "SimHei",            # Windows 黑体
+    "WenQuanYi Micro Hei",  # Linux 常用开源中文字体
+    "Heiti TC",          # macOS 黑体
+    "Noto Sans CJK SC"   # Linux 安装的Noto字体
+]
+# 解决负号显示异常（如“-”变成方块）
+plt.rcParams["axes.unicode_minus"] = False
+# --------------------------------------
 
 # 导入自定义模块
 from pointcept.datasets.builder import build_train_dataloader, build_val_dataloader
@@ -21,6 +35,53 @@ from pointcept.utils.logging import setup_logging  # 导入工具函数
 
 # 1. 配置全局日志（只调用1次！）
 logger = setup_logging(log_dir="./logs")  # 日志文件存到项目根目录的logs文件夹
+
+
+def plot_loss_curve(epochs, train_loss, val_loss, save_dir):
+    """绘制训练/验证损失曲线并保存"""
+    plt.figure(figsize=(10, 6))  # 图片大小（宽10，高6）
+    # 绘制训练损失
+    plt.plot(epochs, train_loss, color='#e74c3c', linewidth=2.5, marker='o', markersize=4, label='训练损失')
+    # 绘制验证损失
+    plt.plot(epochs, val_loss, color='#3498db', linewidth=2.5, marker='s', markersize=4, label='验证损失')
+
+    # 图表美化
+    plt.title('Training & Validation Loss Curve', fontsize=14, fontweight='bold')
+    plt.xlabel('Epoch', fontsize=12)
+    plt.ylabel('Loss', fontsize=12)
+    plt.legend(fontsize=11)  # 图例
+    plt.grid(True, alpha=0.3)  # 网格线（透明度0.3）
+    plt.xticks(np.arange(0, len(epochs) + 1, step=5))  # x轴刻度：每5个epoch显示一个
+
+    # 保存图片（覆盖式保存，始终保留最新曲线）
+    save_path = os.path.join(save_dir, 'loss_curve.png')
+    plt.tight_layout()  # 自动调整布局，避免标签被截断
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')  # dpi=300：高清图片
+    plt.close()  # 关闭画布，避免内存泄漏
+
+
+def plot_f1_curve(epochs, train_f1, val_f1, save_dir):
+    """绘制训练/验证F1曲线并保存"""
+    plt.figure(figsize=(10, 6))
+    # 绘制训练F1
+    plt.plot(epochs, train_f1, color='#2ecc71', linewidth=2.5, marker='o', markersize=4, label='训练F1')
+    # 绘制验证F1
+    plt.plot(epochs, val_f1, color='#f39c12', linewidth=2.5, marker='s', markersize=4, label='验证F1')
+
+    # 图表美化
+    plt.title('Training & Validation F1 Score Curve', fontsize=14, fontweight='bold')
+    plt.xlabel('Epoch', fontsize=12)
+    plt.ylabel('F1 Score', fontsize=12)
+    plt.ylim(0.5, 1.0)  # F1范围固定在0.5~1.0，更直观
+    plt.legend(fontsize=11)
+    plt.grid(True, alpha=0.3)
+    plt.xticks(np.arange(0, len(epochs) + 1, step=5))
+
+    # 保存图片
+    save_path = os.path.join(save_dir, 'f1_curve.png')
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    plt.close()
 
 def main(config_path):
     # -------------------------- 1. 加载配置文件 --------------------------
@@ -77,9 +138,21 @@ def main(config_path):
     # 多分类损失函数（CrossEntropyLoss适用于类别互斥的多分类）
     criterion = torch.nn.CrossEntropyLoss()
 
+    # 🌟 1. 初始化数据记录列表（存储每个epoch的指标）
+    train_losses = []  # 训练损失
+    train_f1s = []  # 训练F1
+    val_losses = []  # 验证损失
+    val_f1s = []  # 验证F1
+    epochs_list = []  # epoch序号（用于x轴）
+
+    # 🌟 2. 创建图片保存文件夹（不存在则自动创建）
+    plot_save_dir = "./logs_photo/plots"
+    os.makedirs(plot_save_dir, exist_ok=True)  # 自动创建多级目录
+
     # -------------------------- 4. 训练循环 --------------------------
     best_val_f1 = 0.0
     for epoch in range(1, cfg['train']['epochs'] + 1):
+        epochs_list.append(epoch)  # 记录当前epoch
         logger.info(f"\n===== Epoch {epoch}/{cfg['train']['epochs']} =====")
 
         # -------------------------- 4.1 训练阶段 --------------------------
@@ -259,6 +332,17 @@ def main(config_path):
                     logger.info(f"✅ 保存最佳模型 (F1={best_val_f1:.4f}) 到 ./checkpoints/")
             else:
                 logger.warning("本epoch无有效验证样本，跳过验证指标计算和模型保存")
+
+        # 🌟 3. 将当前epoch的指标添加到列表
+        train_losses.append(train_loss)
+        train_f1s.append(train_f1)
+        val_losses.append(val_loss)
+        val_f1s.append(val_f1)
+
+        # 🌟 4. 绘制并保存曲线（每个epoch都更新，或每5个epoch更新一次）
+        if epoch % 1 == 0:  # 1表示每个epoch保存，可改为5表示每5个epoch保存
+            plot_loss_curve(epochs_list, train_losses, val_losses, plot_save_dir)
+            plot_f1_curve(epochs_list, train_f1s, val_f1s, plot_save_dir)
 
         # 学习率调度器步进
         scheduler.step()
