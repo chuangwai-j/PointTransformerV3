@@ -16,7 +16,8 @@ from pointcept.datasets.transforms.builder import build_transform  # 注意路�
 @DATASETS.register_module()
 class WindShearDataset(Dataset):
     def __init__(self, split='train', data_root="D:/model/wind_datas/csv_labels",
-                 transform=None, k_neighbors=16, radius=0.5, min_points=50):  # 新增min_points参数
+                 transform=None, k_neighbors=16, radius=0.5, min_points=50,
+                 filter_full_paths=None):  # 新增min_points参数
         super().__init__()
         self.split = split
         self.data_root = data_root
@@ -25,6 +26,9 @@ class WindShearDataset(Dataset):
         self.radius = radius
         self.min_points = min_points  # 新增：初始化min_points属性
         self.data_list = self._get_data_list()
+        self.filter_full_paths = filter_full_paths if filter_full_paths is not None else []  # 存储完整路径列表
+        if self.filter_full_paths:
+            logging.info(f"将过滤{len(self.filter_full_paths)}个低价值样本（完整路径）")
 
         logger = get_root_logger()
         logging.info(f"WindShearDataset {split} split: {len(self.data_list)} scenes")
@@ -140,6 +144,11 @@ class WindShearDataset(Dataset):
         except Exception as e:
             logging.error(f"读取样本{csv_path}失败：{str(e)}，已跳过")
             return None  # 读取失败直接跳过
+
+        # 🌟 核心：按完整路径过滤，仅过滤低点数的那个样本
+        if csv_path in self.filter_full_paths:
+            #logging.warning(f"样本 {csv_path} 因路径匹配被过滤（低点数），已跳过加载")
+            return None
 
         # 提取坐标（x,y,z），强化异常处理
         try:

@@ -39,6 +39,13 @@ data:
     type: WindShearDataset  # 使用您的风切变数据集
     split: train
     data_root: "/mnt/d/model/wind_datas/csv_labels"
+    filter_full_paths:  # 关键：填写低点数样本的完整路径，多个用逗号分隔
+      - "/mnt/d/model/wind_datas/csv_labels/20230310/datas4/period107_labeled.csv"
+      - "/mnt/d/model/wind_datas/csv_labels/20230319/datas1/nn217_labeled.csv"
+      - "/mnt/d/model/wind_datas/csv_labels/20230314/datas1/aa217_labeled.csv"
+      - "/mnt/d/model/wind_datas/csv_labels/20230317/datas1/gg1_labeled.csv"
+      - "/mnt/d/model/wind_datas/csv_labels/20230308/datas1/i1_labeled.csv"
+      - "/mnt/d/model/wind_datas/csv_labels/20230310/datas1/period110_labeled.csv"
     k_neighbors: 16  # 邻域点数
     radius: 100.0      # 邻域半径
     transform:
@@ -104,19 +111,27 @@ train:
   pin_memory: True     # 🌟 启用固定内存，加速CPU→GPU传输
   optimizer:
     type: AdamW
-    lr: 0.001
+    lr: 0.0002
     weight_decay: 0.001
   scheduler:
     type: CosineAnnealingLR
     T_max: 100
+    eta_min: 0.00002
 
-# 其他配置
+# 验证配置（新增，专门用于 val 阶段）
 evaluation:
   interval: 1  # 每1个epoch评估一次
   batch_size: 2  # 🌟 验证集DataLoader的batch_size（与训练一致）
   num_workers: 8  # 🌟 验证集DataLoader的线程数（与训练一致）
   prefetch_factor: 8   # 🌟 与训练一致
   pin_memory: True     # 🌟 与训练一致
+
+# 测试配置（新增，专门用于 test 阶段）
+test:
+  batch_size: 2  # 测试批次大小（可独立设置，如比验证大，充分利用GPU）
+  num_workers: 8  # 测试线程数（可与验证不同）
+  prefetch_factor: 8  # 测试预取批次
+  pin_memory: True  # 测试CPU→GPU传输加速
 
 checkpoint:
   interval: 5  # 每5个epoch保存一次检查点
