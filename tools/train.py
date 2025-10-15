@@ -193,6 +193,7 @@ def main(config_path):
     # -------------------------- 3. 优化后的类别权重设置 --------------------------
     # 🌟 使用更合理的权重设置
     inverse_weights = [0.8, 0.1, 1.0, 4.5, 2.5]
+    #inverse_weights = [0.05, 0.15, 0.3, 0.6, 0.45]
 
     weight_tensor = torch.tensor(inverse_weights, dtype=torch.float32, device=device)
     criterion = torch.nn.CrossEntropyLoss(weight=weight_tensor)
