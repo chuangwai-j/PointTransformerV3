@@ -117,6 +117,9 @@ train:
     type: CosineAnnealingLR
     T_max: 100
     eta_min: 0.00002
+  two_stage: true
+  class_weights: [ 0.8, 0.1, 1.0, 4.5, 2.5 ]   # 与之前一致
+  stage_epochs: [ 100, 30 ]                     # 阶段1/2 轮数
 
 # 验证配置（新增，专门用于 val 阶段）
 evaluation:

@@ -693,10 +693,22 @@ class PointTransformerV3(PointModule):
                 self.dec.add(module=dec, name=f"dec{s}")
 
         # 分类头（多分类，0-4共5类）
+        '''
         if not self.cls_mode:
             self.head = nn.Linear(self.original_dec_channels[0], self.num_classes)  # 输出5个通道（对应5类）
         else:
             self.head = nn.Linear(enc_channels[-1], self.num_classes)  # 输出5个通道（对应5类）
+        '''
+        if not self.cls_mode:
+            in_channels = self.original_dec_channels[0]
+        else:
+            in_channels = enc_channels[-1]
+        self.head = nn.Sequential(
+            nn.Linear(in_channels, 256),  # 第一层线性变换，拓宽维度
+            nn.ReLU(inplace=True),  # 激活函数，增加非线性表达
+            nn.Dropout(0.3),  # 随机失活30%神经元，防止过拟合
+            nn.Linear(256, self.num_classes)  # 第二层线性变换，输出5类预测
+        )
 
     def forward(self, data_dict):
         #  首先检查path是否存在且有效

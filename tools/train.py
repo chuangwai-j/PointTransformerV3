@@ -10,6 +10,7 @@ import numpy as np
 from datetime import datetime
 from tqdm import tqdm
 import warnings
+from pointcept.utils.losses import MixedLoss
 
 os.environ['MPLBACKEND'] = 'Agg'  # 全局强制使用无GUI后端，避免tkinter冲突
 
@@ -196,7 +197,10 @@ def main(config_path):
     #inverse_weights = [0.05, 0.15, 0.3, 0.6, 0.45]
 
     weight_tensor = torch.tensor(inverse_weights, dtype=torch.float32, device=device)
-    criterion = torch.nn.CrossEntropyLoss(weight=weight_tensor)
+    #criterion = torch.nn.CrossEntropyLoss(weight=weight_tensor)
+
+    # 2. 实例化混合损失（num_classes=5对应你的5分类任务，alpha=weight_tensor复用原权重）
+    criterion = MixedLoss(num_classes=5, alpha=weight_tensor, gamma=2.0, focal_weight=1.0, dice_weight=1.0)
 
     logger.info("\n" + "=" * 60)
     logger.info("优化后的类别权重")

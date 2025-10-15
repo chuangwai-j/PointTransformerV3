@@ -4,6 +4,7 @@ import logging
 import numpy as np
 from .builder import TRANSFORMS
 from scipy.spatial import cKDTree
+from .smote import smote_pointcloud
 from pointcept.utils.registry import Registry
 
 @TRANSFORMS.register_module()
@@ -172,6 +173,13 @@ class WindShearGridSample:
         sampled_feat = feat[sampled_indices]
         sampled_label = label[sampled_indices]
         sampled_beamaz = beamaz[sampled_indices] if beamaz is not None else None
+
+        # 🌟 SMOTE增强：仅对少数类2、3、4生成新样本
+        for cls in [2, 3, 4]:
+            sampled_coord, sampled_feat, sampled_label, sampled_beamaz = smote_pointcloud(
+                sampled_coord, sampled_feat, sampled_label, sampled_beamaz,
+                target_class=cls, k=3, generate_ratio=0.3
+            )
 
         # 4. 补点至384的倍数（同步补beamaz）—— 完整保留你的补点逻辑
         sampled_num = len(sampled_coord)
