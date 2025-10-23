@@ -1,0 +1,143 @@
+# 模型配置：所有参数名、格式与 PointTransformerV3.__init__ 完全对齐
+model:
+  type: PT-v3m1                # 正确：与模型注册名 @MODELS.register_module('PT-v3m1') 一致
+  in_channels: 9               # 正确：你的9维输入特征（u/v/BeamAz + 邻域均值/标准差）
+  num_classes: 5               # 正确：风切变二分类（有/无风切变）
+  cls_mode: False              # 必需：False=分割/检测模式（保留解码器），True=分类模式（无解码器），风切变检测需设为False
+  order: ["z", "z-trans"]      # 必需：模型默认的点云序列化顺序，与 __init__ 默认值一致
+  pdnorm_bn: False             # 必需：关闭多数据集适配的PDNorm（单数据集无需）
+  pdnorm_ln: False             # 必需：同上，关闭PDNorm，使用普通LayerNorm/BatchNorm
+
+  # -------------------------- 编码器参数（长度均为4，对应4个编码器阶段） --------------------------
+  # 1. 修正参数名：enc_depth → enc_depths（复数），格式为列表（对应编码器各阶段深度）
+  enc_depths: [1, 1, 3, 1]     # 正确：编码器4个阶段的Block数量，长度=N
+  # 2. 修正参数格式：enc_channels 需为列表（对应编码器各阶段通道数），长度=N
+  enc_channels: [32, 64, 128, 256]  # 正确：与 enc_depths 长度一致（4），每个阶段的特征通道数
+  # 3. 修正参数格式：enc_num_head 需为列表（对应编码器各阶段注意力头数），长度=N
+  enc_num_head: [2, 4, 8, 16]  # 正确：与 enc_depths 长度一致（4），每个阶段的注意力头数（需满足 enc_channels[s] % enc_num_head[s] == 0）
+  # 4. 补充缺失必需参数：stride（池化步长），长度=N-1（enc_depths长度-1）
+  stride: [2, 2, 2]            # 正确：编码器第2-4阶段的池化步长，长度=4-1=3
+  # 5. 补充缺失必需参数：enc_patch_size（编码器注意力patch大小），长度=N
+  enc_patch_size: [48, 48, 48, 48]  # 正确：与 enc_depths 长度一致（4），每个阶段的注意力patch大小
+
+  # -------------------------- 解码器参数（长度均为3，对应 N-1=3个解码器阶段） --------------------------
+  # cls_mode=False时必需，长度需=编码器阶段数-1=3
+  dec_depths: [1, 1, 1]        # 正确：解码器3个阶段的Block数量，长度=4-1=3
+  dec_channels: [64, 64, 128]  # 正确：解码器各阶段通道数，长度=4-1=3
+  dec_num_head: [4, 4, 8]      # 正确：解码器各阶段注意力头数，长度=4-1=3
+  dec_patch_size: [48, 48, 48] # 正确：解码器各阶段patch大小，长度=4-1=3
+
+  # -------------------------- 模型默认参数（可选，已优化） --------------------------
+  mlp_ratio: 4                  # 默认：MLP隐藏层通道数倍数（enc_channels[s] * mlp_ratio）
+  qkv_bias: True                # 默认：注意力QKV是否加偏置
+  drop_path: 0.5                # 默认：DropPath概率（防止过拟合）
+  enable_flash: False           # 建议：若未安装flash_attn，设为False（避免导入错误）
+
+# 数据配置
+data:
+  train:
+    type: WindShearDataset  # 使用您的风切变数据集
+    split: train
+    data_root: "/mnt/d/model/wind_datas/csv_labels"
+    filter_full_paths:  # 关键：填写低点数样本的完整路径，多个用逗号分隔
+      - "/mnt/d/model/wind_datas/csv_labels/20230310/datas4/period107_labeled.csv"
+      - "/mnt/d/model/wind_datas/csv_labels/20230319/datas1/nn217_labeled.csv"
+      - "/mnt/d/model/wind_datas/csv_labels/20230314/datas1/aa217_labeled.csv"
+      - "/mnt/d/model/wind_datas/csv_labels/20230317/datas1/gg1_labeled.csv"
+      - "/mnt/d/model/wind_datas/csv_labels/20230308/datas1/i1_labeled.csv"
+      - "/mnt/d/model/wind_datas/csv_labels/20230310/datas1/period110_labeled.csv"
+    k_neighbors: 16  # 邻域点数
+    radius: 100.0      # 邻域半径
+    transform:
+      - type: NormalizeWind  # 风速标准化
+        u_mean: -0.7983   # 替换为真实u均值
+        u_std: 2.6732     # 替换为真实u标准差
+        v_mean: 2.0401    # 替换为真实v均值
+        v_std: 3.1915     # 替换为真实v标准差
+        beamaz_mean: 184.0494  # 替换为真实beamaz均值
+        beamaz_std: 100.2158   # 替换为真实beamaz标准差
+      - type: WindShearGridSample     # 网格采样
+        grid_size: [122.6, 118.0, 5.4]
+        min_points: 50
+        adaptive: False
+      - type: ToTensor       # 转换为张量
+
+  val:
+    type: WindShearDataset
+    split: val
+    data_root: "/mnt/d/model/wind_datas/csv_labels"
+    k_neighbors: 16
+    radius: 100.0
+    transform:
+      - type: NormalizeWind
+        u_mean: -0.7983   # 替换为真实u均值
+        u_std: 2.6732     # 替换为真实u标准差
+        v_mean: 2.0401    # 替换为真实v均值
+        v_std: 3.1915     # 替换为真实v标准差
+        beamaz_mean: 184.0494  # 替换为真实beamaz均值
+        beamaz_std: 100.2158   # 替换为真实beamaz标准差
+      - type: WindShearGridSample
+        grid_size: [122.6, 118.0, 5.4]
+        min_points: 50
+        adaptive: False
+      - type: ToTensor
+
+  test:
+    type: WindShearDataset
+    split: test
+    data_root: "/mnt/d/model/wind_datas/csv_labels"
+    k_neighbors: 16
+    radius: 100.0
+    transform:
+      - type: NormalizeWind
+        u_mean: -0.7983   # 替换为真实u均值
+        u_std: 2.6732     # 替换为真实u标准差
+        v_mean: 2.0401    # 替换为真实v均值
+        v_std: 3.1915     # 替换为真实v标准差
+        beamaz_mean: 184.0494  # 替换为真实beamaz均值
+        beamaz_std: 100.2158   # 替换为真实beamaz标准差
+      - type: WindShearGridSample
+        grid_size: [122.6, 118.0, 5.4]
+        min_points: 50
+        adaptive: False
+      - type: ToTensor
+
+# 训练配置
+train:
+  epochs: 60
+  batch_size: 2  # 🌟 移回这里：训练集DataLoader的batch_size
+  num_workers: 8  # 🌟 移回这里：训练集DataLoader的线程数
+  prefetch_factor: 8   # 🌟 预取批次从默认2提升到4
+  pin_memory: True     # 🌟 启用固定内存，加速CPU→GPU传输
+  optimizer:
+    type: AdamW
+    lr: 0.00015
+    weight_decay: 0.001
+  scheduler:
+    type: CosineAnnealingLR
+    T_max: 100
+    eta_min: 0.00001
+  two_stage: true
+  class_weights: [ 0.8, 0.1, 1.0, 4.5, 2.5 ]   # 与之前一致
+  stage_epochs: [ 100, 30 ]                     # 阶段1/2 轮数
+
+# 验证配置（新增，专门用于 val 阶段）
+evaluation:
+  interval: 1  # 每1个epoch评估一次
+  batch_size: 2  # 🌟 验证集DataLoader的batch_size（与训练一致）
+  num_workers: 8  # 🌟 验证集DataLoader的线程数（与训练一致）
+  prefetch_factor: 8   # 🌟 与训练一致
+  pin_memory: True     # 🌟 与训练一致
+
+# 测试配置（新增，专门用于 test 阶段）
+test:
+  batch_size: 2  # 测试批次大小（可独立设置，如比验证大，充分利用GPU）
+  num_workers: 8  # 测试线程数（可与验证不同）
+  prefetch_factor: 8  # 测试预取批次
+  pin_memory: True  # 测试CPU→GPU传输加速
+
+checkpoint:
+  interval: 5  # 每5个epoch保存一次检查点
+
+log:
+  interval: 50  # 记录日志
