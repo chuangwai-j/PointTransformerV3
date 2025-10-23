@@ -104,19 +104,19 @@ data:
 
 # 训练配置
 train:
-  epochs: 100
+  epochs: 60
   batch_size: 2  # 🌟 移回这里：训练集DataLoader的batch_size
   num_workers: 8  # 🌟 移回这里：训练集DataLoader的线程数
   prefetch_factor: 8   # 🌟 预取批次从默认2提升到4
   pin_memory: True     # 🌟 启用固定内存，加速CPU→GPU传输
   optimizer:
     type: AdamW
-    lr: 0.0002
+    lr: 0.00015
     weight_decay: 0.001
   scheduler:
     type: CosineAnnealingLR
     T_max: 100
-    eta_min: 0.00002
+    eta_min: 0.00001
   two_stage: true
   class_weights: [ 0.8, 0.1, 1.0, 4.5, 2.5 ]   # 与之前一致
   stage_epochs: [ 100, 30 ]                     # 阶段1/2 轮数

@@ -9794,3 +9794,8 @@ ValueError: 样本0（bbbbb(51)_labeled.csv）beamaz异常：形状=torch.Size([
 [2025-10-15 22:59:58,399 INFO train_two_stage.py line 128 71231] Stage1 Epoch1 Train F1=0.6796
 [2025-10-15 23:01:29,850 INFO train_two_stage.py line 156 71231] Stage1 Epoch1 Val F1=0.7330
 [2025-10-15 23:01:30,155 INFO train_two_stage.py line 166 71231] ✅ 保存最佳 Stage1 模型 F1=0.7330
+[2025-10-16 00:57:54,967 INFO train_two_stage.py line 58 5358] ========== STAGE 1 START ==========
+[2025-10-16 01:06:36,774 INFO train_two_stage.py line 128 5358] Stage1 Epoch1 Train F1=0.6767
+[2025-10-16 01:08:04,137 INFO train_two_stage.py line 156 5358] Stage1 Epoch1 Val F1=0.6821
+[2025-10-16 01:08:04,234 INFO train_two_stage.py line 166 5358] ✅ 保存最佳 Stage1 模型 F1=0.6821
+[2025-10-16 01:17:00,305 INFO train_two_stage.py line 128 5358] Stage1 Epoch2 Train F1=0.7479

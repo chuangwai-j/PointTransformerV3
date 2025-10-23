@@ -16,6 +16,7 @@ os.environ['MPLBACKEND'] = 'Agg'  # 全局强制使用无GUI后端，避免tkint
 
 # 2. 再导入matplotlib
 import matplotlib.pyplot as plt
+from torch.cuda.amp import autocast, GradScaler
 
 
 # 导入自定义模块
