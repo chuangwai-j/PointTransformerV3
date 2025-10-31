@@ -9799,3 +9799,29 @@ ValueError: 样本0（bbbbb(51)_labeled.csv）beamaz异常：形状=torch.Size([
 [2025-10-16 01:08:04,137 INFO train_two_stage.py line 156 5358] Stage1 Epoch1 Val F1=0.6821
 [2025-10-16 01:08:04,234 INFO train_two_stage.py line 166 5358] ✅ 保存最佳 Stage1 模型 F1=0.6821
 [2025-10-16 01:17:00,305 INFO train_two_stage.py line 128 5358] Stage1 Epoch2 Train F1=0.7479
+[2025-10-31 11:35:48,607 INFO train.py line 168 6558] 使用配置文件: configs/wind_shear/pointtransformer_v3.yaml
+[2025-10-31 11:35:48,711 INFO train.py line 171 6558] 使用设备: cuda
+[2025-10-31 11:35:50,101 INFO train.py line 182 6558] 
+训练集第一个batch字段验证：
+[2025-10-31 11:35:50,101 INFO train.py line 185 6558]   offset: shape torch.Size([3]), dtype torch.int64
+[2025-10-31 11:35:50,101 INFO train.py line 185 6558]   coord: shape torch.Size([7296, 3]), dtype torch.float64
+[2025-10-31 11:35:50,101 INFO train.py line 185 6558]   feat: shape torch.Size([7296, 9]), dtype torch.float32
+[2025-10-31 11:35:50,102 INFO train.py line 185 6558]   generate_label: shape torch.Size([7296]), dtype torch.int64
+[2025-10-31 11:35:50,102 INFO train.py line 185 6558]   beamaz: shape torch.Size([7296]), dtype torch.float64
+[2025-10-31 11:35:50,102 INFO train.py line 185 6558]   grid_size: shape torch.Size([3]), dtype torch.float32
+[2025-10-31 11:35:50,102 INFO train.py line 187 6558]   path: type <class 'list'>
+[2025-10-31 11:35:50,102 INFO train.py line 193 6558] 训练集样本数: 8934, 验证集样本数: 2130
+[2025-10-31 11:35:50,111 INFO train.py line 206 6558] 
+============================================================
+[2025-10-31 11:35:50,111 INFO train.py line 207 6558] 优化后的类别权重
+[2025-10-31 11:35:50,111 INFO train.py line 208 6558] ============================================================
+[2025-10-31 11:35:50,111 INFO train.py line 211 6558] 类别0（无风切变）：权重=0.800000
+[2025-10-31 11:35:50,111 INFO train.py line 211 6558] 类别1（轻微风切变）：权重=0.100000
+[2025-10-31 11:35:50,111 INFO train.py line 211 6558] 类别2（中度风切变）：权重=1.000000
+[2025-10-31 11:35:50,111 INFO train.py line 211 6558] 类别3（重度风切变）：权重=4.500000
+[2025-10-31 11:35:50,111 INFO train.py line 211 6558] 类别4（严重风切变）：权重=2.500000
+[2025-10-31 11:35:50,111 INFO train.py line 212 6558] ============================================================
+[2025-10-31 11:35:50,285 INFO train.py line 216 6558] 模型类型: PointTransformerV3
+[2025-10-31 11:35:50,291 INFO train.py line 263 6558] 
+===== Epoch 1/60 =====
+[2025-10-31 11:35:50,291 INFO train.py line 264 6558] 当前学习率: 0.000150

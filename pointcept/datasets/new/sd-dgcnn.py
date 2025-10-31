@@ -32,7 +32,7 @@ x, y, z, u, v, w, label
 24, 20, 34, 1.1, 0.1, 0.0, 1
 25, 20, 35, 1.2, 0.2, 0.0, 1
 26, 20, 36, 1.3, 0.3, 0.0, 1
-27, 20, 37, 1.4, 0.4, 0.0, 1
+27, 20, 37W, 1.4, 0.4, 0.0, 1
 """
 data = pd.read_csv(StringIO(simulated_data_content), comment='#')
 data.columns = data.columns.str.strip()

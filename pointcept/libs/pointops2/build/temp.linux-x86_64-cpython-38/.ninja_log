@@ -1,0 +1,15 @@
+# ninja log v7
+11	52012	1761416077459835502	/home/wai/PointTransformerV3/pointcept/libs/pointops2/build/temp.linux-x86_64-cpython-38/src/interpolation/interpolation_cuda.o	dbc35d4eaf181781
+4	52122	1761416077449835568	/home/wai/PointTransformerV3/pointcept/libs/pointops2/build/temp.linux-x86_64-cpython-38/src/aggregation/aggregation_cuda.o	21da1acf3c200edf
+5	54101	1761416077449835568	/home/wai/PointTransformerV3/pointcept/libs/pointops2/build/temp.linux-x86_64-cpython-38/src/attention_v2/attention_cuda_v2.o	b064bc8b797f6cd1
+5	54364	1761416077449835568	/home/wai/PointTransformerV3/pointcept/libs/pointops2/build/temp.linux-x86_64-cpython-38/src/attention/attention_cuda.o	3f3659a392cd4eb2
+5	54471	1761416077449835568	/home/wai/PointTransformerV3/pointcept/libs/pointops2/build/temp.linux-x86_64-cpython-38/src/grouping/grouping_cuda.o	9d5da91e80b073b6
+5	75887	1761416077449835568	/home/wai/PointTransformerV3/pointcept/libs/pointops2/build/temp.linux-x86_64-cpython-38/src/attention_v2/attention_cuda_kernel_v2.o	14a304429be27f94
+7	76376	1761416077449835568	/home/wai/PointTransformerV3/pointcept/libs/pointops2/build/temp.linux-x86_64-cpython-38/src/grouping/grouping_cuda_kernel.o	2642d371b1332fa8
+12	78173	1761416077459835502	/home/wai/PointTransformerV3/pointcept/libs/pointops2/build/temp.linux-x86_64-cpython-38/src/interpolation/interpolation_cuda_kernel.o	1d1c1630a4aa1f5e
+54364	80753	1761416131809847089	/home/wai/PointTransformerV3/pointcept/libs/pointops2/build/temp.linux-x86_64-cpython-38/src/rpe/relative_pos_encoding_cuda.o	eb03a52881c5d7af
+52020	81099	1761416129459893111	/home/wai/PointTransformerV3/pointcept/libs/pointops2/build/temp.linux-x86_64-cpython-38/src/knnquery/knnquery_cuda.o	1b9d15e124bda5f6
+5	81287	1761416077449835568	/home/wai/PointTransformerV3/pointcept/libs/pointops2/build/temp.linux-x86_64-cpython-38/src/attention/attention_cuda_kernel.o	129a29a5a4923986
+5	81624	1761416077449835568	/home/wai/PointTransformerV3/pointcept/libs/pointops2/build/temp.linux-x86_64-cpython-38/src/aggregation/aggregation_cuda_kernel.o	4bd4daed05aea68c
+52122	93500	1761416129569890937	/home/wai/PointTransformerV3/pointcept/libs/pointops2/build/temp.linux-x86_64-cpython-38/src/knnquery/knnquery_cuda_kernel.o	133b25e113d3e387
+54472	93932	1761416131919844949	/home/wai/PointTransformerV3/pointcept/libs/pointops2/build/temp.linux-x86_64-cpython-38/src/rpe/relative_pos_encoding_cuda_kernel.o	632f1b48aa7390eb

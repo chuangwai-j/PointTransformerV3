@@ -1,3 +1,5 @@
-[submodule "Pointcept"]
-	path = Pointcept
-	url = https://github.com/Pointcept/Pointcept
+git rm -r --cached checkpoints/
+git rm -r --cached logs/
+git rm -r --cached logs_photo/
+git commit -m "Remove previously tracked folders"
+git push
