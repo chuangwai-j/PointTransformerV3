@@ -201,6 +201,19 @@ class WindShearDataset(Dataset):
             beamaz = beamaz[valid_label_mask]
             logging.warning(f"样本{csv_path}含{invalid_count}个无效标签（非0-4），已过滤")
 
+        # 🌟 新增：按高度过滤 (z <= 1000m)
+        height_mask = (coord[:, 2] <= 1000) & (coord[:, 2] >= 0)
+        if not np.all(height_mask):  # 仅在需要过滤时执行
+            original_point_count = len(coord)
+            coord = coord[height_mask]
+            feat = feat[height_mask]
+            label = label[height_mask]
+            beamaz = beamaz[height_mask]
+            filtered_count = original_point_count - len(coord)
+            if filtered_count > 0: # 避免不必要的日志
+                # 使用 logging.info 而不是 warning，因为这是正常操作
+                logging.info(f"样本{csv_path}过滤{filtered_count}个高空点 (z > 1000m)")
+
         # 若过滤后无有效点，直接跳过
         if len(coord) == 0:
             logging.warning(f"样本{csv_path}过滤后无有效点，已跳过")

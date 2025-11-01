@@ -194,10 +194,10 @@ def main(config_path):
 
     # -------------------------- 3. 优化后的类别权重设置 --------------------------
     # 🌟 使用更合理的权重设置
-    inverse_weights = [0.8, 0.1, 1.0, 4.5, 2.5]
+    weights = cfg['train']['class_weights']
     #inverse_weights = [0.05, 0.15, 0.3, 0.6, 0.45]
 
-    weight_tensor = torch.tensor(inverse_weights, dtype=torch.float32, device=device)
+    weight_tensor = torch.tensor(weights, dtype=torch.float32, device=device)
     #criterion = torch.nn.CrossEntropyLoss(weight=weight_tensor)
 
     # 2. 实例化混合损失（num_classes=5对应你的5分类任务，alpha=weight_tensor复用原权重）
@@ -208,12 +208,29 @@ def main(config_path):
     logger.info("=" * 60)
     class_names = ["无风切变", "轻微风切变", "中度风切变", "重度风切变", "严重风切变"]
     for cls in range(5):
-        logger.info(f"类别{cls}（{class_names[cls]}）：权重={inverse_weights[cls]:.6f}")
+        logger.info(f"类别{cls}（{class_names[cls]}）：权重={weights[cls]:.6f}")
     logger.info("=" * 60)
 
     # -------------------------- 4. 初始化模型、优化器、学习率调度器 --------------------------
     model = build_model(cfg['model']).to(device)
     logger.info(f"模型类型: {model.__class__.__name__}")
+
+    # 🌟 ===================== 新增代码开始 ===================== 🌟
+    # 打印模型配置参数，这对于测试时复现模型至关重要
+    logger.info("\n" + "=" * 60)
+    logger.info("模型配置参数 (cfg['model']):")
+    logger.info("=" * 60)
+    for key, value in cfg['model'].items():
+        logger.info(f"  {key}: {value}")
+    logger.info("=" * 60)
+
+    # 打印模型完整结构
+    logger.info("\n" + "=" * 60)
+    logger.info("模型完整结构 (Model Structure):")
+    logger.info("=" * 60)
+    logger.info(str(model))  # str(model) 将捕获完整的 PyTorch 结构
+    logger.info("=" * 60)
+    # 🌟 ===================== 新增代码结束 ===================== 🌟
 
     # 🌟 从配置读取学习率设置
     initial_lr = cfg['train']['optimizer']['lr']

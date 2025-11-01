@@ -9825,3 +9825,959 @@ ValueError: 样本0（bbbbb(51)_labeled.csv）beamaz异常：形状=torch.Size([
 [2025-10-31 11:35:50,291 INFO train.py line 263 6558] 
 ===== Epoch 1/60 =====
 [2025-10-31 11:35:50,291 INFO train.py line 264 6558] 当前学习率: 0.000150
+[2025-10-31 19:41:57,152 INFO train.py line 168 2017] 使用配置文件: configs/wind_shear/pointtransformer_v3.yaml
+[2025-10-31 19:41:57,256 INFO train.py line 171 2017] 使用设备: cuda
+[2025-10-31 19:41:58,585 INFO train.py line 182 2017] 
+训练集第一个batch字段验证：
+[2025-10-31 19:41:58,585 INFO train.py line 185 2017]   offset: shape torch.Size([3]), dtype torch.int64
+[2025-10-31 19:41:58,585 INFO train.py line 185 2017]   coord: shape torch.Size([10368, 3]), dtype torch.float64
+[2025-10-31 19:41:58,585 INFO train.py line 185 2017]   feat: shape torch.Size([10368, 9]), dtype torch.float32
+[2025-10-31 19:41:58,585 INFO train.py line 185 2017]   generate_label: shape torch.Size([10368]), dtype torch.int64
+[2025-10-31 19:41:58,585 INFO train.py line 185 2017]   beamaz: shape torch.Size([10368]), dtype torch.float64
+[2025-10-31 19:41:58,585 INFO train.py line 185 2017]   grid_size: shape torch.Size([3]), dtype torch.float32
+[2025-10-31 19:41:58,585 INFO train.py line 187 2017]   path: type <class 'list'>
+[2025-10-31 19:41:58,585 INFO train.py line 193 2017] 训练集样本数: 8934, 验证集样本数: 2130
+[2025-10-31 19:41:58,587 INFO train.py line 206 2017] 
+============================================================
+[2025-10-31 19:41:58,587 INFO train.py line 207 2017] 优化后的类别权重
+[2025-10-31 19:41:58,587 INFO train.py line 208 2017] ============================================================
+[2025-10-31 19:41:58,587 INFO train.py line 211 2017] 类别0（无风切变）：权重=0.800000
+[2025-10-31 19:41:58,587 INFO train.py line 211 2017] 类别1（轻微风切变）：权重=0.100000
+[2025-10-31 19:41:58,587 INFO train.py line 211 2017] 类别2（中度风切变）：权重=1.000000
+[2025-10-31 19:41:58,587 INFO train.py line 211 2017] 类别3（重度风切变）：权重=4.500000
+[2025-10-31 19:41:58,587 INFO train.py line 211 2017] 类别4（严重风切变）：权重=2.500000
+[2025-10-31 19:41:58,587 INFO train.py line 212 2017] ============================================================
+[2025-10-31 19:41:58,746 INFO train.py line 216 2017] 模型类型: PointTransformerV3
+[2025-10-31 19:41:58,749 INFO train.py line 263 2017] 
+===== Epoch 1/60 =====
+[2025-10-31 19:41:58,750 INFO train.py line 264 2017] 当前学习率: 0.000150
+[2025-10-31 20:28:46,731 INFO train.py line 168 17543] 使用配置文件: configs/wind_shear/pointtransformer_v3.yaml
+[2025-10-31 20:28:46,863 INFO train.py line 171 17543] 使用设备: cuda
+[2025-10-31 20:28:48,306 INFO train.py line 182 17543] 
+训练集第一个batch字段验证：
+[2025-10-31 20:28:48,306 INFO train.py line 185 17543]   offset: shape torch.Size([3]), dtype torch.int64
+[2025-10-31 20:28:48,306 INFO train.py line 185 17543]   coord: shape torch.Size([7296, 3]), dtype torch.float64
+[2025-10-31 20:28:48,306 INFO train.py line 185 17543]   feat: shape torch.Size([7296, 9]), dtype torch.float32
+[2025-10-31 20:28:48,306 INFO train.py line 185 17543]   generate_label: shape torch.Size([7296]), dtype torch.int64
+[2025-10-31 20:28:48,307 INFO train.py line 185 17543]   beamaz: shape torch.Size([7296]), dtype torch.float64
+[2025-10-31 20:28:48,307 INFO train.py line 185 17543]   grid_size: shape torch.Size([3]), dtype torch.float32
+[2025-10-31 20:28:48,307 INFO train.py line 187 17543]   path: type <class 'list'>
+[2025-10-31 20:28:48,307 INFO train.py line 193 17543] 训练集样本数: 8934, 验证集样本数: 2130
+[2025-10-31 20:28:48,315 INFO train.py line 206 17543] 
+============================================================
+[2025-10-31 20:28:48,315 INFO train.py line 207 17543] 优化后的类别权重
+[2025-10-31 20:28:48,315 INFO train.py line 208 17543] ============================================================
+[2025-10-31 20:28:48,315 INFO train.py line 211 17543] 类别0（无风切变）：权重=0.800000
+[2025-10-31 20:28:48,315 INFO train.py line 211 17543] 类别1（轻微风切变）：权重=0.100000
+[2025-10-31 20:28:48,315 INFO train.py line 211 17543] 类别2（中度风切变）：权重=1.000000
+[2025-10-31 20:28:48,315 INFO train.py line 211 17543] 类别3（重度风切变）：权重=4.500000
+[2025-10-31 20:28:48,315 INFO train.py line 211 17543] 类别4（严重风切变）：权重=2.500000
+[2025-10-31 20:28:48,315 INFO train.py line 212 17543] ============================================================
+[2025-10-31 20:28:48,418 INFO train.py line 216 17543] 模型类型: PointTransformerV3
+[2025-10-31 20:28:48,419 INFO train.py line 263 17543] 
+===== Epoch 1/60 =====
+[2025-10-31 20:28:48,419 INFO train.py line 264 17543] 当前学习率: 0.000150
+[2025-10-31 21:00:38,724 INFO train.py line 168 28463] 使用配置文件: configs/wind_shear/pointtransformer_v3.yaml
+[2025-10-31 21:00:38,835 INFO train.py line 171 28463] 使用设备: cuda
+[2025-10-31 21:00:40,410 INFO train.py line 182 28463] 
+训练集第一个batch字段验证：
+[2025-10-31 21:00:40,411 INFO train.py line 185 28463]   offset: shape torch.Size([3]), dtype torch.int64
+[2025-10-31 21:00:40,411 INFO train.py line 185 28463]   coord: shape torch.Size([7680, 3]), dtype torch.float64
+[2025-10-31 21:00:40,411 INFO train.py line 185 28463]   feat: shape torch.Size([7680, 9]), dtype torch.float32
+[2025-10-31 21:00:40,411 INFO train.py line 185 28463]   generate_label: shape torch.Size([7680]), dtype torch.int64
+[2025-10-31 21:00:40,411 INFO train.py line 185 28463]   beamaz: shape torch.Size([7680]), dtype torch.float64
+[2025-10-31 21:00:40,411 INFO train.py line 185 28463]   grid_size: shape torch.Size([3]), dtype torch.float32
+[2025-10-31 21:00:40,411 INFO train.py line 187 28463]   path: type <class 'list'>
+[2025-10-31 21:00:40,411 INFO train.py line 193 28463] 训练集样本数: 8934, 验证集样本数: 2130
+[2025-10-31 21:00:40,415 INFO train.py line 206 28463] 
+============================================================
+[2025-10-31 21:00:40,415 INFO train.py line 207 28463] 优化后的类别权重
+[2025-10-31 21:00:40,415 INFO train.py line 208 28463] ============================================================
+[2025-10-31 21:00:40,415 INFO train.py line 211 28463] 类别0（无风切变）：权重=0.800000
+[2025-10-31 21:00:40,415 INFO train.py line 211 28463] 类别1（轻微风切变）：权重=0.100000
+[2025-10-31 21:00:40,415 INFO train.py line 211 28463] 类别2（中度风切变）：权重=1.000000
+[2025-10-31 21:00:40,415 INFO train.py line 211 28463] 类别3（重度风切变）：权重=4.500000
+[2025-10-31 21:00:40,415 INFO train.py line 211 28463] 类别4（严重风切变）：权重=2.500000
+[2025-10-31 21:00:40,415 INFO train.py line 212 28463] ============================================================
+[2025-10-31 21:00:40,604 INFO train.py line 216 28463] 模型类型: PointTransformerV3
+[2025-10-31 21:00:40,605 INFO train.py line 263 28463] 
+===== Epoch 1/60 =====
+[2025-10-31 21:00:40,605 INFO train.py line 264 28463] 当前学习率: 0.000150
+[2025-10-31 21:16:37,563 INFO train.py line 168 33754] 使用配置文件: configs/wind_shear/pointtransformer_v3.yaml
+[2025-10-31 21:16:37,661 INFO train.py line 171 33754] 使用设备: cuda
+[2025-10-31 21:16:38,909 INFO train.py line 182 33754] 
+训练集第一个batch字段验证：
+[2025-10-31 21:16:38,909 INFO train.py line 185 33754]   offset: shape torch.Size([3]), dtype torch.int64
+[2025-10-31 21:16:38,909 INFO train.py line 185 33754]   coord: shape torch.Size([7296, 3]), dtype torch.float64
+[2025-10-31 21:16:38,909 INFO train.py line 185 33754]   feat: shape torch.Size([7296, 9]), dtype torch.float32
+[2025-10-31 21:16:38,909 INFO train.py line 185 33754]   generate_label: shape torch.Size([7296]), dtype torch.int64
+[2025-10-31 21:16:38,909 INFO train.py line 185 33754]   beamaz: shape torch.Size([7296]), dtype torch.float64
+[2025-10-31 21:16:38,909 INFO train.py line 185 33754]   grid_size: shape torch.Size([3]), dtype torch.float32
+[2025-10-31 21:16:38,909 INFO train.py line 187 33754]   path: type <class 'list'>
+[2025-10-31 21:16:38,909 INFO train.py line 193 33754] 训练集样本数: 8934, 验证集样本数: 2130
+[2025-10-31 21:16:38,911 INFO train.py line 206 33754] 
+============================================================
+[2025-10-31 21:16:38,911 INFO train.py line 207 33754] 优化后的类别权重
+[2025-10-31 21:16:38,911 INFO train.py line 208 33754] ============================================================
+[2025-10-31 21:16:38,912 INFO train.py line 211 33754] 类别0（无风切变）：权重=0.800000
+[2025-10-31 21:16:38,912 INFO train.py line 211 33754] 类别1（轻微风切变）：权重=0.100000
+[2025-10-31 21:16:38,912 INFO train.py line 211 33754] 类别2（中度风切变）：权重=1.000000
+[2025-10-31 21:16:38,912 INFO train.py line 211 33754] 类别3（重度风切变）：权重=4.500000
+[2025-10-31 21:16:38,912 INFO train.py line 211 33754] 类别4（严重风切变）：权重=2.500000
+[2025-10-31 21:16:38,912 INFO train.py line 212 33754] ============================================================
+[2025-10-31 21:16:39,010 INFO train.py line 216 33754] 模型类型: PointTransformerV3
+[2025-10-31 21:16:39,011 INFO train.py line 263 33754] 
+===== Epoch 1/60 =====
+[2025-10-31 21:16:39,011 INFO train.py line 264 33754] 当前学习率: 0.000150
+[2025-10-31 21:57:19,647 INFO train.py line 168 47625] 使用配置文件: configs/wind_shear/pointtransformer_v3.yaml
+[2025-10-31 21:57:19,776 INFO train.py line 171 47625] 使用设备: cuda
+[2025-10-31 21:57:21,099 INFO train.py line 182 47625] 
+训练集第一个batch字段验证：
+[2025-10-31 21:57:21,099 INFO train.py line 185 47625]   offset: shape torch.Size([3]), dtype torch.int64
+[2025-10-31 21:57:21,099 INFO train.py line 185 47625]   coord: shape torch.Size([3840, 3]), dtype torch.float64
+[2025-10-31 21:57:21,099 INFO train.py line 185 47625]   feat: shape torch.Size([3840, 9]), dtype torch.float32
+[2025-10-31 21:57:21,099 INFO train.py line 185 47625]   generate_label: shape torch.Size([3840]), dtype torch.int64
+[2025-10-31 21:57:21,099 INFO train.py line 185 47625]   beamaz: shape torch.Size([3840]), dtype torch.float64
+[2025-10-31 21:57:21,099 INFO train.py line 185 47625]   grid_size: shape torch.Size([3]), dtype torch.float32
+[2025-10-31 21:57:21,099 INFO train.py line 187 47625]   path: type <class 'list'>
+[2025-10-31 21:57:21,099 INFO train.py line 193 47625] 训练集样本数: 8934, 验证集样本数: 2130
+[2025-10-31 21:57:21,121 INFO train.py line 206 47625] 
+============================================================
+[2025-10-31 21:57:21,121 INFO train.py line 207 47625] 优化后的类别权重
+[2025-10-31 21:57:21,121 INFO train.py line 208 47625] ============================================================
+[2025-10-31 21:57:21,121 INFO train.py line 211 47625] 类别0（无风切变）：权重=0.800000
+[2025-10-31 21:57:21,121 INFO train.py line 211 47625] 类别1（轻微风切变）：权重=0.100000
+[2025-10-31 21:57:21,121 INFO train.py line 211 47625] 类别2（中度风切变）：权重=1.000000
+[2025-10-31 21:57:21,122 INFO train.py line 211 47625] 类别3（重度风切变）：权重=4.500000
+[2025-10-31 21:57:21,123 INFO train.py line 211 47625] 类别4（严重风切变）：权重=2.500000
+[2025-10-31 21:57:21,123 INFO train.py line 212 47625] ============================================================
+[2025-10-31 21:57:21,247 INFO train.py line 216 47625] 模型类型: PointTransformerV3
+[2025-10-31 21:57:21,249 INFO train.py line 263 47625] 
+===== Epoch 1/60 =====
+[2025-10-31 21:57:21,250 INFO train.py line 264 47625] 当前学习率: 0.000150
+[2025-10-31 22:12:07,075 INFO train.py line 168 52499] 使用配置文件: configs/wind_shear/pointtransformer_v3.yaml
+[2025-10-31 22:12:07,123 INFO train.py line 171 52499] 使用设备: cuda
+[2025-10-31 22:12:08,090 INFO train.py line 182 52499] 
+训练集第一个batch字段验证：
+[2025-10-31 22:12:08,090 INFO train.py line 185 52499]   offset: shape torch.Size([3]), dtype torch.int64
+[2025-10-31 22:12:08,091 INFO train.py line 185 52499]   coord: shape torch.Size([5376, 3]), dtype torch.float64
+[2025-10-31 22:12:08,091 INFO train.py line 185 52499]   feat: shape torch.Size([5376, 9]), dtype torch.float32
+[2025-10-31 22:12:08,091 INFO train.py line 185 52499]   generate_label: shape torch.Size([5376]), dtype torch.int64
+[2025-10-31 22:12:08,091 INFO train.py line 185 52499]   beamaz: shape torch.Size([5376]), dtype torch.float64
+[2025-10-31 22:12:08,091 INFO train.py line 185 52499]   grid_size: shape torch.Size([3]), dtype torch.float32
+[2025-10-31 22:12:08,091 INFO train.py line 187 52499]   path: type <class 'list'>
+[2025-10-31 22:12:08,091 INFO train.py line 193 52499] 训练集样本数: 8934, 验证集样本数: 2130
+[2025-10-31 22:12:08,093 INFO train.py line 206 52499] 
+============================================================
+[2025-10-31 22:12:08,093 INFO train.py line 207 52499] 优化后的类别权重
+[2025-10-31 22:12:08,093 INFO train.py line 208 52499] ============================================================
+[2025-10-31 22:12:08,093 INFO train.py line 211 52499] 类别0（无风切变）：权重=0.800000
+[2025-10-31 22:12:08,093 INFO train.py line 211 52499] 类别1（轻微风切变）：权重=0.100000
+[2025-10-31 22:12:08,093 INFO train.py line 211 52499] 类别2（中度风切变）：权重=1.000000
+[2025-10-31 22:12:08,093 INFO train.py line 211 52499] 类别3（重度风切变）：权重=4.500000
+[2025-10-31 22:12:08,093 INFO train.py line 211 52499] 类别4（严重风切变）：权重=2.500000
+[2025-10-31 22:12:08,093 INFO train.py line 212 52499] ============================================================
+[2025-10-31 22:12:08,248 INFO train.py line 216 52499] 模型类型: PointTransformerV3
+[2025-10-31 22:12:08,249 INFO train.py line 220 52499] 
+============================================================
+[2025-10-31 22:12:08,249 INFO train.py line 221 52499] 模型配置参数 (cfg['model']):
+[2025-10-31 22:12:08,254 INFO train.py line 222 52499] ============================================================
+[2025-10-31 22:12:08,254 INFO train.py line 224 52499]   type: PT-v3m1
+[2025-10-31 22:12:08,256 INFO train.py line 224 52499]   in_channels: 9
+[2025-10-31 22:12:08,256 INFO train.py line 224 52499]   num_classes: 5
+[2025-10-31 22:12:08,256 INFO train.py line 224 52499]   cls_mode: False
+[2025-10-31 22:12:08,256 INFO train.py line 224 52499]   order: ['z', 'z-trans']
+[2025-10-31 22:12:08,256 INFO train.py line 224 52499]   pdnorm_bn: False
+[2025-10-31 22:12:08,256 INFO train.py line 224 52499]   pdnorm_ln: False
+[2025-10-31 22:12:08,256 INFO train.py line 224 52499]   enc_depths: [1, 1, 3, 1]
+[2025-10-31 22:12:08,256 INFO train.py line 224 52499]   enc_channels: [32, 64, 128, 256]
+[2025-10-31 22:12:08,256 INFO train.py line 224 52499]   enc_num_head: [2, 4, 8, 16]
+[2025-10-31 22:12:08,257 INFO train.py line 224 52499]   stride: [2, 2, 2]
+[2025-10-31 22:12:08,257 INFO train.py line 224 52499]   enc_patch_size: [48, 48, 48, 48]
+[2025-10-31 22:12:08,257 INFO train.py line 224 52499]   dec_depths: [1, 1, 1]
+[2025-10-31 22:12:08,257 INFO train.py line 224 52499]   dec_channels: [64, 64, 128]
+[2025-10-31 22:12:08,257 INFO train.py line 224 52499]   dec_num_head: [4, 4, 8]
+[2025-10-31 22:12:08,257 INFO train.py line 224 52499]   dec_patch_size: [48, 48, 48]
+[2025-10-31 22:12:08,257 INFO train.py line 224 52499]   mlp_ratio: 4
+[2025-10-31 22:12:08,257 INFO train.py line 224 52499]   qkv_bias: True
+[2025-10-31 22:12:08,257 INFO train.py line 224 52499]   drop_path: 0.5
+[2025-10-31 22:12:08,257 INFO train.py line 224 52499]   enable_flash: False
+[2025-10-31 22:12:08,257 INFO train.py line 225 52499] ============================================================
+[2025-10-31 22:12:08,257 INFO train.py line 228 52499] 
+============================================================
+[2025-10-31 22:12:08,257 INFO train.py line 229 52499] 模型完整结构 (Model Structure):
+[2025-10-31 22:12:08,257 INFO train.py line 230 52499] ============================================================
+[2025-10-31 22:12:08,260 INFO train.py line 231 52499] PointTransformerV3(
+  (embedding): Embedding(
+    (stem): PointSequential(
+      (conv): SubMConv3d(9, 32, kernel_size=[5, 5, 5], stride=[1, 1, 1], padding=[1, 1, 1], dilation=[1, 1, 1], output_padding=[0, 0, 0], bias=False, algo=ConvAlgo.Native)
+      (norm): BatchNorm1d(32, eps=0.001, momentum=0.01, affine=True, track_running_stats=True)
+      (act): GELU(approximate='none')
+    )
+  )
+  (enc): PointSequential(
+    (enc0): PointSequential(
+      (block0): Block(
+        (cpe): PointSequential(
+          (0): SubMConv3d(32, 32, kernel_size=[3, 3, 3], stride=[1, 1, 1], padding=[0, 0, 0], dilation=[1, 1, 1], output_padding=[0, 0, 0], algo=ConvAlgo.MaskImplicitGemm)
+          (1): Linear(in_features=32, out_features=32, bias=True)
+          (2): LayerNorm((32,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm1): PointSequential(
+          (0): LayerNorm((32,), eps=1e-05, elementwise_affine=True)
+        )
+        (attn): SerializedAttention(
+          (attn_drop): Dropout(p=0.0, inplace=False)
+          (qkv): Linear(in_features=32, out_features=96, bias=True)
+          (proj): Linear(in_features=32, out_features=32, bias=True)
+          (proj_drop): Dropout(p=0.0, inplace=False)
+          (softmax): Softmax(dim=-1)
+        )
+        (norm2): PointSequential(
+          (0): LayerNorm((32,), eps=1e-05, elementwise_affine=True)
+        )
+        (mlp): PointSequential(
+          (0): MLP(
+            (fc1): Linear(in_features=32, out_features=128, bias=True)
+            (act): GELU(approximate='none')
+            (fc2): Linear(in_features=128, out_features=32, bias=True)
+            (drop): Dropout(p=0.0, inplace=False)
+          )
+        )
+        (drop_path): Identity()
+      )
+    )
+    (enc1): PointSequential(
+      (down): SerializedPooling(
+        (proj): Linear(in_features=32, out_features=64, bias=True)
+        (norm): PointSequential(
+          (0): BatchNorm1d(64, eps=0.001, momentum=0.01, affine=True, track_running_stats=True)
+        )
+        (act): PointSequential(
+          (0): GELU(approximate='none')
+        )
+      )
+      (block0): Block(
+        (cpe): PointSequential(
+          (0): SubMConv3d(64, 64, kernel_size=[3, 3, 3], stride=[1, 1, 1], padding=[0, 0, 0], dilation=[1, 1, 1], output_padding=[0, 0, 0], algo=ConvAlgo.MaskImplicitGemm)
+          (1): Linear(in_features=64, out_features=64, bias=True)
+          (2): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm1): PointSequential(
+          (0): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+        )
+        (attn): SerializedAttention(
+          (attn_drop): Dropout(p=0.0, inplace=False)
+          (qkv): Linear(in_features=64, out_features=192, bias=True)
+          (proj): Linear(in_features=64, out_features=64, bias=True)
+          (proj_drop): Dropout(p=0.0, inplace=False)
+          (softmax): Softmax(dim=-1)
+        )
+        (norm2): PointSequential(
+          (0): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+        )
+        (mlp): PointSequential(
+          (0): MLP(
+            (fc1): Linear(in_features=64, out_features=256, bias=True)
+            (act): GELU(approximate='none')
+            (fc2): Linear(in_features=256, out_features=64, bias=True)
+            (drop): Dropout(p=0.0, inplace=False)
+          )
+        )
+        (drop_path): DropPath(drop_prob=0.100)
+      )
+    )
+    (enc2): PointSequential(
+      (down): SerializedPooling(
+        (proj): Linear(in_features=64, out_features=128, bias=True)
+        (norm): PointSequential(
+          (0): BatchNorm1d(128, eps=0.001, momentum=0.01, affine=True, track_running_stats=True)
+        )
+        (act): PointSequential(
+          (0): GELU(approximate='none')
+        )
+      )
+      (block0): Block(
+        (cpe): PointSequential(
+          (0): SubMConv3d(128, 128, kernel_size=[3, 3, 3], stride=[1, 1, 1], padding=[0, 0, 0], dilation=[1, 1, 1], output_padding=[0, 0, 0], algo=ConvAlgo.MaskImplicitGemm)
+          (1): Linear(in_features=128, out_features=128, bias=True)
+          (2): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm1): PointSequential(
+          (0): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        )
+        (attn): SerializedAttention(
+          (attn_drop): Dropout(p=0.0, inplace=False)
+          (qkv): Linear(in_features=128, out_features=384, bias=True)
+          (proj): Linear(in_features=128, out_features=128, bias=True)
+          (proj_drop): Dropout(p=0.0, inplace=False)
+          (softmax): Softmax(dim=-1)
+        )
+        (norm2): PointSequential(
+          (0): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        )
+        (mlp): PointSequential(
+          (0): MLP(
+            (fc1): Linear(in_features=128, out_features=512, bias=True)
+            (act): GELU(approximate='none')
+            (fc2): Linear(in_features=512, out_features=128, bias=True)
+            (drop): Dropout(p=0.0, inplace=False)
+          )
+        )
+        (drop_path): DropPath(drop_prob=0.200)
+      )
+      (block1): Block(
+        (cpe): PointSequential(
+          (0): SubMConv3d(128, 128, kernel_size=[3, 3, 3], stride=[1, 1, 1], padding=[0, 0, 0], dilation=[1, 1, 1], output_padding=[0, 0, 0], algo=ConvAlgo.MaskImplicitGemm)
+          (1): Linear(in_features=128, out_features=128, bias=True)
+          (2): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm1): PointSequential(
+          (0): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        )
+        (attn): SerializedAttention(
+          (attn_drop): Dropout(p=0.0, inplace=False)
+          (qkv): Linear(in_features=128, out_features=384, bias=True)
+          (proj): Linear(in_features=128, out_features=128, bias=True)
+          (proj_drop): Dropout(p=0.0, inplace=False)
+          (softmax): Softmax(dim=-1)
+        )
+        (norm2): PointSequential(
+          (0): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        )
+        (mlp): PointSequential(
+          (0): MLP(
+            (fc1): Linear(in_features=128, out_features=512, bias=True)
+            (act): GELU(approximate='none')
+            (fc2): Linear(in_features=512, out_features=128, bias=True)
+            (drop): Dropout(p=0.0, inplace=False)
+          )
+        )
+        (drop_path): DropPath(drop_prob=0.300)
+      )
+      (block2): Block(
+        (cpe): PointSequential(
+          (0): SubMConv3d(128, 128, kernel_size=[3, 3, 3], stride=[1, 1, 1], padding=[0, 0, 0], dilation=[1, 1, 1], output_padding=[0, 0, 0], algo=ConvAlgo.MaskImplicitGemm)
+          (1): Linear(in_features=128, out_features=128, bias=True)
+          (2): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm1): PointSequential(
+          (0): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        )
+        (attn): SerializedAttention(
+          (attn_drop): Dropout(p=0.0, inplace=False)
+          (qkv): Linear(in_features=128, out_features=384, bias=True)
+          (proj): Linear(in_features=128, out_features=128, bias=True)
+          (proj_drop): Dropout(p=0.0, inplace=False)
+          (softmax): Softmax(dim=-1)
+        )
+        (norm2): PointSequential(
+          (0): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        )
+        (mlp): PointSequential(
+          (0): MLP(
+            (fc1): Linear(in_features=128, out_features=512, bias=True)
+            (act): GELU(approximate='none')
+            (fc2): Linear(in_features=512, out_features=128, bias=True)
+            (drop): Dropout(p=0.0, inplace=False)
+          )
+        )
+        (drop_path): DropPath(drop_prob=0.400)
+      )
+    )
+    (enc3): PointSequential(
+      (down): SerializedPooling(
+        (proj): Linear(in_features=128, out_features=256, bias=True)
+        (norm): PointSequential(
+          (0): BatchNorm1d(256, eps=0.001, momentum=0.01, affine=True, track_running_stats=True)
+        )
+        (act): PointSequential(
+          (0): GELU(approximate='none')
+        )
+      )
+      (block0): Block(
+        (cpe): PointSequential(
+          (0): SubMConv3d(256, 256, kernel_size=[3, 3, 3], stride=[1, 1, 1], padding=[0, 0, 0], dilation=[1, 1, 1], output_padding=[0, 0, 0], algo=ConvAlgo.MaskImplicitGemm)
+          (1): Linear(in_features=256, out_features=256, bias=True)
+          (2): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm1): PointSequential(
+          (0): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+        )
+        (attn): SerializedAttention(
+          (attn_drop): Dropout(p=0.0, inplace=False)
+          (qkv): Linear(in_features=256, out_features=768, bias=True)
+          (proj): Linear(in_features=256, out_features=256, bias=True)
+          (proj_drop): Dropout(p=0.0, inplace=False)
+          (softmax): Softmax(dim=-1)
+        )
+        (norm2): PointSequential(
+          (0): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+        )
+        (mlp): PointSequential(
+          (0): MLP(
+            (fc1): Linear(in_features=256, out_features=1024, bias=True)
+            (act): GELU(approximate='none')
+            (fc2): Linear(in_features=1024, out_features=256, bias=True)
+            (drop): Dropout(p=0.0, inplace=False)
+          )
+        )
+        (drop_path): DropPath(drop_prob=0.500)
+      )
+    )
+  )
+  (dec): PointSequential(
+    (dec2): PointSequential(
+      (up): SerializedUnpooling(
+        (proj): PointSequential(
+          (0): Linear(in_features=256, out_features=128, bias=True)
+          (1): BatchNorm1d(128, eps=0.001, momentum=0.01, affine=True, track_running_stats=True)
+          (2): GELU(approximate='none')
+        )
+        (proj_skip): PointSequential(
+          (0): Linear(in_features=128, out_features=128, bias=True)
+          (1): BatchNorm1d(128, eps=0.001, momentum=0.01, affine=True, track_running_stats=True)
+          (2): GELU(approximate='none')
+        )
+      )
+      (block0): Block(
+        (cpe): PointSequential(
+          (0): SubMConv3d(128, 128, kernel_size=[3, 3, 3], stride=[1, 1, 1], padding=[0, 0, 0], dilation=[1, 1, 1], output_padding=[0, 0, 0], algo=ConvAlgo.MaskImplicitGemm)
+          (1): Linear(in_features=128, out_features=128, bias=True)
+          (2): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm1): PointSequential(
+          (0): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        )
+        (attn): SerializedAttention(
+          (attn_drop): Dropout(p=0.0, inplace=False)
+          (qkv): Linear(in_features=128, out_features=384, bias=True)
+          (proj): Linear(in_features=128, out_features=128, bias=True)
+          (proj_drop): Dropout(p=0.0, inplace=False)
+          (softmax): Softmax(dim=-1)
+        )
+        (norm2): PointSequential(
+          (0): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        )
+        (mlp): PointSequential(
+          (0): MLP(
+            (fc1): Linear(in_features=128, out_features=512, bias=True)
+            (act): GELU(approximate='none')
+            (fc2): Linear(in_features=512, out_features=128, bias=True)
+            (drop): Dropout(p=0.0, inplace=False)
+          )
+        )
+        (drop_path): DropPath(drop_prob=0.500)
+      )
+    )
+    (dec1): PointSequential(
+      (up): SerializedUnpooling(
+        (proj): PointSequential(
+          (0): Linear(in_features=128, out_features=64, bias=True)
+          (1): BatchNorm1d(64, eps=0.001, momentum=0.01, affine=True, track_running_stats=True)
+          (2): GELU(approximate='none')
+        )
+        (proj_skip): PointSequential(
+          (0): Linear(in_features=64, out_features=64, bias=True)
+          (1): BatchNorm1d(64, eps=0.001, momentum=0.01, affine=True, track_running_stats=True)
+          (2): GELU(approximate='none')
+        )
+      )
+      (block0): Block(
+        (cpe): PointSequential(
+          (0): SubMConv3d(64, 64, kernel_size=[3, 3, 3], stride=[1, 1, 1], padding=[0, 0, 0], dilation=[1, 1, 1], output_padding=[0, 0, 0], algo=ConvAlgo.MaskImplicitGemm)
+          (1): Linear(in_features=64, out_features=64, bias=True)
+          (2): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm1): PointSequential(
+          (0): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+        )
+        (attn): SerializedAttention(
+          (attn_drop): Dropout(p=0.0, inplace=False)
+          (qkv): Linear(in_features=64, out_features=192, bias=True)
+          (proj): Linear(in_features=64, out_features=64, bias=True)
+          (proj_drop): Dropout(p=0.0, inplace=False)
+          (softmax): Softmax(dim=-1)
+        )
+        (norm2): PointSequential(
+          (0): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+        )
+        (mlp): PointSequential(
+          (0): MLP(
+            (fc1): Linear(in_features=64, out_features=256, bias=True)
+            (act): GELU(approximate='none')
+            (fc2): Linear(in_features=256, out_features=64, bias=True)
+            (drop): Dropout(p=0.0, inplace=False)
+          )
+        )
+        (drop_path): DropPath(drop_prob=0.250)
+      )
+    )
+    (dec0): PointSequential(
+      (up): SerializedUnpooling(
+        (proj): PointSequential(
+          (0): Linear(in_features=64, out_features=64, bias=True)
+          (1): BatchNorm1d(64, eps=0.001, momentum=0.01, affine=True, track_running_stats=True)
+          (2): GELU(approximate='none')
+        )
+        (proj_skip): PointSequential(
+          (0): Linear(in_features=32, out_features=64, bias=True)
+          (1): BatchNorm1d(64, eps=0.001, momentum=0.01, affine=True, track_running_stats=True)
+          (2): GELU(approximate='none')
+        )
+      )
+      (block0): Block(
+        (cpe): PointSequential(
+          (0): SubMConv3d(64, 64, kernel_size=[3, 3, 3], stride=[1, 1, 1], padding=[0, 0, 0], dilation=[1, 1, 1], output_padding=[0, 0, 0], algo=ConvAlgo.MaskImplicitGemm)
+          (1): Linear(in_features=64, out_features=64, bias=True)
+          (2): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm1): PointSequential(
+          (0): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+        )
+        (attn): SerializedAttention(
+          (attn_drop): Dropout(p=0.0, inplace=False)
+          (qkv): Linear(in_features=64, out_features=192, bias=True)
+          (proj): Linear(in_features=64, out_features=64, bias=True)
+          (proj_drop): Dropout(p=0.0, inplace=False)
+          (softmax): Softmax(dim=-1)
+        )
+        (norm2): PointSequential(
+          (0): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+        )
+        (mlp): PointSequential(
+          (0): MLP(
+            (fc1): Linear(in_features=64, out_features=256, bias=True)
+            (act): GELU(approximate='none')
+            (fc2): Linear(in_features=256, out_features=64, bias=True)
+            (drop): Dropout(p=0.0, inplace=False)
+          )
+        )
+        (drop_path): Identity()
+      )
+    )
+  )
+  (head): Sequential(
+    (0): Linear(in_features=64, out_features=256, bias=True)
+    (1): ReLU(inplace=True)
+    (2): Dropout(p=0.3, inplace=False)
+    (3): Linear(in_features=256, out_features=5, bias=True)
+  )
+)
+[2025-10-31 22:12:08,267 INFO train.py line 232 52499] ============================================================
+[2025-10-31 22:12:08,270 INFO train.py line 280 52499] 
+===== Epoch 1/60 =====
+[2025-10-31 22:12:08,270 INFO train.py line 281 52499] 当前学习率: 0.000150
+[2025-10-31 22:14:25,774 INFO train.py line 168 53373] 使用配置文件: configs/wind_shear/pointtransformer_v3.yaml
+[2025-10-31 22:14:25,806 INFO train.py line 171 53373] 使用设备: cuda
+[2025-10-31 22:14:26,848 INFO train.py line 182 53373] 
+训练集第一个batch字段验证：
+[2025-10-31 22:14:26,849 INFO train.py line 185 53373]   offset: shape torch.Size([3]), dtype torch.int64
+[2025-10-31 22:14:26,849 INFO train.py line 185 53373]   coord: shape torch.Size([4992, 3]), dtype torch.float64
+[2025-10-31 22:14:26,849 INFO train.py line 185 53373]   feat: shape torch.Size([4992, 9]), dtype torch.float32
+[2025-10-31 22:14:26,849 INFO train.py line 185 53373]   generate_label: shape torch.Size([4992]), dtype torch.int64
+[2025-10-31 22:14:26,849 INFO train.py line 185 53373]   beamaz: shape torch.Size([4992]), dtype torch.float64
+[2025-10-31 22:14:26,849 INFO train.py line 185 53373]   grid_size: shape torch.Size([3]), dtype torch.float32
+[2025-10-31 22:14:26,849 INFO train.py line 187 53373]   path: type <class 'list'>
+[2025-10-31 22:14:26,849 INFO train.py line 193 53373] 训练集样本数: 8934, 验证集样本数: 2130
+[2025-10-31 22:14:26,850 INFO train.py line 206 53373] 
+============================================================
+[2025-10-31 22:14:26,855 INFO train.py line 207 53373] 优化后的类别权重
+[2025-10-31 22:14:26,855 INFO train.py line 208 53373] ============================================================
+[2025-10-31 22:14:26,856 INFO train.py line 211 53373] 类别0（无风切变）：权重=34.443600
+[2025-10-31 22:14:26,856 INFO train.py line 211 53373] 类别1（轻微风切变）：权重=2.024800
+[2025-10-31 22:14:26,856 INFO train.py line 211 53373] 类别2（中度风切变）：权重=4.391200
+[2025-10-31 22:14:26,856 INFO train.py line 211 53373] 类别3（重度风切变）：权重=13.728600
+[2025-10-31 22:14:26,856 INFO train.py line 211 53373] 类别4（严重风切变）：权重=10.435100
+[2025-10-31 22:14:26,856 INFO train.py line 212 53373] ============================================================
+[2025-10-31 22:14:26,984 INFO train.py line 216 53373] 模型类型: PointTransformerV3
+[2025-10-31 22:14:26,985 INFO train.py line 220 53373] 
+============================================================
+[2025-10-31 22:14:26,985 INFO train.py line 221 53373] 模型配置参数 (cfg['model']):
+[2025-10-31 22:14:26,985 INFO train.py line 222 53373] ============================================================
+[2025-10-31 22:14:26,985 INFO train.py line 224 53373]   type: PT-v3m1
+[2025-10-31 22:14:26,985 INFO train.py line 224 53373]   in_channels: 9
+[2025-10-31 22:14:26,985 INFO train.py line 224 53373]   num_classes: 5
+[2025-10-31 22:14:26,985 INFO train.py line 224 53373]   cls_mode: False
+[2025-10-31 22:14:26,985 INFO train.py line 224 53373]   order: ['z', 'z-trans']
+[2025-10-31 22:14:26,985 INFO train.py line 224 53373]   pdnorm_bn: False
+[2025-10-31 22:14:26,985 INFO train.py line 224 53373]   pdnorm_ln: False
+[2025-10-31 22:14:26,985 INFO train.py line 224 53373]   enc_depths: [1, 1, 3, 1]
+[2025-10-31 22:14:26,985 INFO train.py line 224 53373]   enc_channels: [32, 64, 128, 256]
+[2025-10-31 22:14:26,985 INFO train.py line 224 53373]   enc_num_head: [2, 4, 8, 16]
+[2025-10-31 22:14:26,985 INFO train.py line 224 53373]   stride: [2, 2, 2]
+[2025-10-31 22:14:26,985 INFO train.py line 224 53373]   enc_patch_size: [48, 48, 48, 48]
+[2025-10-31 22:14:26,985 INFO train.py line 224 53373]   dec_depths: [1, 1, 1]
+[2025-10-31 22:14:26,985 INFO train.py line 224 53373]   dec_channels: [64, 64, 128]
+[2025-10-31 22:14:26,985 INFO train.py line 224 53373]   dec_num_head: [4, 4, 8]
+[2025-10-31 22:14:26,985 INFO train.py line 224 53373]   dec_patch_size: [48, 48, 48]
+[2025-10-31 22:14:26,985 INFO train.py line 224 53373]   mlp_ratio: 4
+[2025-10-31 22:14:26,985 INFO train.py line 224 53373]   qkv_bias: True
+[2025-10-31 22:14:26,985 INFO train.py line 224 53373]   drop_path: 0.5
+[2025-10-31 22:14:26,985 INFO train.py line 224 53373]   enable_flash: False
+[2025-10-31 22:14:26,985 INFO train.py line 225 53373] ============================================================
+[2025-10-31 22:14:26,985 INFO train.py line 228 53373] 
+============================================================
+[2025-10-31 22:14:26,985 INFO train.py line 229 53373] 模型完整结构 (Model Structure):
+[2025-10-31 22:14:26,985 INFO train.py line 230 53373] ============================================================
+[2025-10-31 22:14:26,986 INFO train.py line 231 53373] PointTransformerV3(
+  (embedding): Embedding(
+    (stem): PointSequential(
+      (conv): SubMConv3d(9, 32, kernel_size=[5, 5, 5], stride=[1, 1, 1], padding=[1, 1, 1], dilation=[1, 1, 1], output_padding=[0, 0, 0], bias=False, algo=ConvAlgo.Native)
+      (norm): BatchNorm1d(32, eps=0.001, momentum=0.01, affine=True, track_running_stats=True)
+      (act): GELU(approximate='none')
+    )
+  )
+  (enc): PointSequential(
+    (enc0): PointSequential(
+      (block0): Block(
+        (cpe): PointSequential(
+          (0): SubMConv3d(32, 32, kernel_size=[3, 3, 3], stride=[1, 1, 1], padding=[0, 0, 0], dilation=[1, 1, 1], output_padding=[0, 0, 0], algo=ConvAlgo.MaskImplicitGemm)
+          (1): Linear(in_features=32, out_features=32, bias=True)
+          (2): LayerNorm((32,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm1): PointSequential(
+          (0): LayerNorm((32,), eps=1e-05, elementwise_affine=True)
+        )
+        (attn): SerializedAttention(
+          (attn_drop): Dropout(p=0.0, inplace=False)
+          (qkv): Linear(in_features=32, out_features=96, bias=True)
+          (proj): Linear(in_features=32, out_features=32, bias=True)
+          (proj_drop): Dropout(p=0.0, inplace=False)
+          (softmax): Softmax(dim=-1)
+        )
+        (norm2): PointSequential(
+          (0): LayerNorm((32,), eps=1e-05, elementwise_affine=True)
+        )
+        (mlp): PointSequential(
+          (0): MLP(
+            (fc1): Linear(in_features=32, out_features=128, bias=True)
+            (act): GELU(approximate='none')
+            (fc2): Linear(in_features=128, out_features=32, bias=True)
+            (drop): Dropout(p=0.0, inplace=False)
+          )
+        )
+        (drop_path): Identity()
+      )
+    )
+    (enc1): PointSequential(
+      (down): SerializedPooling(
+        (proj): Linear(in_features=32, out_features=64, bias=True)
+        (norm): PointSequential(
+          (0): BatchNorm1d(64, eps=0.001, momentum=0.01, affine=True, track_running_stats=True)
+        )
+        (act): PointSequential(
+          (0): GELU(approximate='none')
+        )
+      )
+      (block0): Block(
+        (cpe): PointSequential(
+          (0): SubMConv3d(64, 64, kernel_size=[3, 3, 3], stride=[1, 1, 1], padding=[0, 0, 0], dilation=[1, 1, 1], output_padding=[0, 0, 0], algo=ConvAlgo.MaskImplicitGemm)
+          (1): Linear(in_features=64, out_features=64, bias=True)
+          (2): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm1): PointSequential(
+          (0): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+        )
+        (attn): SerializedAttention(
+          (attn_drop): Dropout(p=0.0, inplace=False)
+          (qkv): Linear(in_features=64, out_features=192, bias=True)
+          (proj): Linear(in_features=64, out_features=64, bias=True)
+          (proj_drop): Dropout(p=0.0, inplace=False)
+          (softmax): Softmax(dim=-1)
+        )
+        (norm2): PointSequential(
+          (0): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+        )
+        (mlp): PointSequential(
+          (0): MLP(
+            (fc1): Linear(in_features=64, out_features=256, bias=True)
+            (act): GELU(approximate='none')
+            (fc2): Linear(in_features=256, out_features=64, bias=True)
+            (drop): Dropout(p=0.0, inplace=False)
+          )
+        )
+        (drop_path): DropPath(drop_prob=0.100)
+      )
+    )
+    (enc2): PointSequential(
+      (down): SerializedPooling(
+        (proj): Linear(in_features=64, out_features=128, bias=True)
+        (norm): PointSequential(
+          (0): BatchNorm1d(128, eps=0.001, momentum=0.01, affine=True, track_running_stats=True)
+        )
+        (act): PointSequential(
+          (0): GELU(approximate='none')
+        )
+      )
+      (block0): Block(
+        (cpe): PointSequential(
+          (0): SubMConv3d(128, 128, kernel_size=[3, 3, 3], stride=[1, 1, 1], padding=[0, 0, 0], dilation=[1, 1, 1], output_padding=[0, 0, 0], algo=ConvAlgo.MaskImplicitGemm)
+          (1): Linear(in_features=128, out_features=128, bias=True)
+          (2): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm1): PointSequential(
+          (0): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        )
+        (attn): SerializedAttention(
+          (attn_drop): Dropout(p=0.0, inplace=False)
+          (qkv): Linear(in_features=128, out_features=384, bias=True)
+          (proj): Linear(in_features=128, out_features=128, bias=True)
+          (proj_drop): Dropout(p=0.0, inplace=False)
+          (softmax): Softmax(dim=-1)
+        )
+        (norm2): PointSequential(
+          (0): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        )
+        (mlp): PointSequential(
+          (0): MLP(
+            (fc1): Linear(in_features=128, out_features=512, bias=True)
+            (act): GELU(approximate='none')
+            (fc2): Linear(in_features=512, out_features=128, bias=True)
+            (drop): Dropout(p=0.0, inplace=False)
+          )
+        )
+        (drop_path): DropPath(drop_prob=0.200)
+      )
+      (block1): Block(
+        (cpe): PointSequential(
+          (0): SubMConv3d(128, 128, kernel_size=[3, 3, 3], stride=[1, 1, 1], padding=[0, 0, 0], dilation=[1, 1, 1], output_padding=[0, 0, 0], algo=ConvAlgo.MaskImplicitGemm)
+          (1): Linear(in_features=128, out_features=128, bias=True)
+          (2): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm1): PointSequential(
+          (0): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        )
+        (attn): SerializedAttention(
+          (attn_drop): Dropout(p=0.0, inplace=False)
+          (qkv): Linear(in_features=128, out_features=384, bias=True)
+          (proj): Linear(in_features=128, out_features=128, bias=True)
+          (proj_drop): Dropout(p=0.0, inplace=False)
+          (softmax): Softmax(dim=-1)
+        )
+        (norm2): PointSequential(
+          (0): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        )
+        (mlp): PointSequential(
+          (0): MLP(
+            (fc1): Linear(in_features=128, out_features=512, bias=True)
+            (act): GELU(approximate='none')
+            (fc2): Linear(in_features=512, out_features=128, bias=True)
+            (drop): Dropout(p=0.0, inplace=False)
+          )
+        )
+        (drop_path): DropPath(drop_prob=0.300)
+      )
+      (block2): Block(
+        (cpe): PointSequential(
+          (0): SubMConv3d(128, 128, kernel_size=[3, 3, 3], stride=[1, 1, 1], padding=[0, 0, 0], dilation=[1, 1, 1], output_padding=[0, 0, 0], algo=ConvAlgo.MaskImplicitGemm)
+          (1): Linear(in_features=128, out_features=128, bias=True)
+          (2): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm1): PointSequential(
+          (0): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        )
+        (attn): SerializedAttention(
+          (attn_drop): Dropout(p=0.0, inplace=False)
+          (qkv): Linear(in_features=128, out_features=384, bias=True)
+          (proj): Linear(in_features=128, out_features=128, bias=True)
+          (proj_drop): Dropout(p=0.0, inplace=False)
+          (softmax): Softmax(dim=-1)
+        )
+        (norm2): PointSequential(
+          (0): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        )
+        (mlp): PointSequential(
+          (0): MLP(
+            (fc1): Linear(in_features=128, out_features=512, bias=True)
+            (act): GELU(approximate='none')
+            (fc2): Linear(in_features=512, out_features=128, bias=True)
+            (drop): Dropout(p=0.0, inplace=False)
+          )
+        )
+        (drop_path): DropPath(drop_prob=0.400)
+      )
+    )
+    (enc3): PointSequential(
+      (down): SerializedPooling(
+        (proj): Linear(in_features=128, out_features=256, bias=True)
+        (norm): PointSequential(
+          (0): BatchNorm1d(256, eps=0.001, momentum=0.01, affine=True, track_running_stats=True)
+        )
+        (act): PointSequential(
+          (0): GELU(approximate='none')
+        )
+      )
+      (block0): Block(
+        (cpe): PointSequential(
+          (0): SubMConv3d(256, 256, kernel_size=[3, 3, 3], stride=[1, 1, 1], padding=[0, 0, 0], dilation=[1, 1, 1], output_padding=[0, 0, 0], algo=ConvAlgo.MaskImplicitGemm)
+          (1): Linear(in_features=256, out_features=256, bias=True)
+          (2): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm1): PointSequential(
+          (0): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+        )
+        (attn): SerializedAttention(
+          (attn_drop): Dropout(p=0.0, inplace=False)
+          (qkv): Linear(in_features=256, out_features=768, bias=True)
+          (proj): Linear(in_features=256, out_features=256, bias=True)
+          (proj_drop): Dropout(p=0.0, inplace=False)
+          (softmax): Softmax(dim=-1)
+        )
+        (norm2): PointSequential(
+          (0): LayerNorm((256,), eps=1e-05, elementwise_affine=True)
+        )
+        (mlp): PointSequential(
+          (0): MLP(
+            (fc1): Linear(in_features=256, out_features=1024, bias=True)
+            (act): GELU(approximate='none')
+            (fc2): Linear(in_features=1024, out_features=256, bias=True)
+            (drop): Dropout(p=0.0, inplace=False)
+          )
+        )
+        (drop_path): DropPath(drop_prob=0.500)
+      )
+    )
+  )
+  (dec): PointSequential(
+    (dec2): PointSequential(
+      (up): SerializedUnpooling(
+        (proj): PointSequential(
+          (0): Linear(in_features=256, out_features=128, bias=True)
+          (1): BatchNorm1d(128, eps=0.001, momentum=0.01, affine=True, track_running_stats=True)
+          (2): GELU(approximate='none')
+        )
+        (proj_skip): PointSequential(
+          (0): Linear(in_features=128, out_features=128, bias=True)
+          (1): BatchNorm1d(128, eps=0.001, momentum=0.01, affine=True, track_running_stats=True)
+          (2): GELU(approximate='none')
+        )
+      )
+      (block0): Block(
+        (cpe): PointSequential(
+          (0): SubMConv3d(128, 128, kernel_size=[3, 3, 3], stride=[1, 1, 1], padding=[0, 0, 0], dilation=[1, 1, 1], output_padding=[0, 0, 0], algo=ConvAlgo.MaskImplicitGemm)
+          (1): Linear(in_features=128, out_features=128, bias=True)
+          (2): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm1): PointSequential(
+          (0): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        )
+        (attn): SerializedAttention(
+          (attn_drop): Dropout(p=0.0, inplace=False)
+          (qkv): Linear(in_features=128, out_features=384, bias=True)
+          (proj): Linear(in_features=128, out_features=128, bias=True)
+          (proj_drop): Dropout(p=0.0, inplace=False)
+          (softmax): Softmax(dim=-1)
+        )
+        (norm2): PointSequential(
+          (0): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        )
+        (mlp): PointSequential(
+          (0): MLP(
+            (fc1): Linear(in_features=128, out_features=512, bias=True)
+            (act): GELU(approximate='none')
+            (fc2): Linear(in_features=512, out_features=128, bias=True)
+            (drop): Dropout(p=0.0, inplace=False)
+          )
+        )
+        (drop_path): DropPath(drop_prob=0.500)
+      )
+    )
+    (dec1): PointSequential(
+      (up): SerializedUnpooling(
+        (proj): PointSequential(
+          (0): Linear(in_features=128, out_features=64, bias=True)
+          (1): BatchNorm1d(64, eps=0.001, momentum=0.01, affine=True, track_running_stats=True)
+          (2): GELU(approximate='none')
+        )
+        (proj_skip): PointSequential(
+          (0): Linear(in_features=64, out_features=64, bias=True)
+          (1): BatchNorm1d(64, eps=0.001, momentum=0.01, affine=True, track_running_stats=True)
+          (2): GELU(approximate='none')
+        )
+      )
+      (block0): Block(
+        (cpe): PointSequential(
+          (0): SubMConv3d(64, 64, kernel_size=[3, 3, 3], stride=[1, 1, 1], padding=[0, 0, 0], dilation=[1, 1, 1], output_padding=[0, 0, 0], algo=ConvAlgo.MaskImplicitGemm)
+          (1): Linear(in_features=64, out_features=64, bias=True)
+          (2): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm1): PointSequential(
+          (0): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+        )
+        (attn): SerializedAttention(
+          (attn_drop): Dropout(p=0.0, inplace=False)
+          (qkv): Linear(in_features=64, out_features=192, bias=True)
+          (proj): Linear(in_features=64, out_features=64, bias=True)
+          (proj_drop): Dropout(p=0.0, inplace=False)
+          (softmax): Softmax(dim=-1)
+        )
+        (norm2): PointSequential(
+          (0): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+        )
+        (mlp): PointSequential(
+          (0): MLP(
+            (fc1): Linear(in_features=64, out_features=256, bias=True)
+            (act): GELU(approximate='none')
+            (fc2): Linear(in_features=256, out_features=64, bias=True)
+            (drop): Dropout(p=0.0, inplace=False)
+          )
+        )
+        (drop_path): DropPath(drop_prob=0.250)
+      )
+    )
+    (dec0): PointSequential(
+      (up): SerializedUnpooling(
+        (proj): PointSequential(
+          (0): Linear(in_features=64, out_features=64, bias=True)
+          (1): BatchNorm1d(64, eps=0.001, momentum=0.01, affine=True, track_running_stats=True)
+          (2): GELU(approximate='none')
+        )
+        (proj_skip): PointSequential(
+          (0): Linear(in_features=32, out_features=64, bias=True)
+          (1): BatchNorm1d(64, eps=0.001, momentum=0.01, affine=True, track_running_stats=True)
+          (2): GELU(approximate='none')
+        )
+      )
+      (block0): Block(
+        (cpe): PointSequential(
+          (0): SubMConv3d(64, 64, kernel_size=[3, 3, 3], stride=[1, 1, 1], padding=[0, 0, 0], dilation=[1, 1, 1], output_padding=[0, 0, 0], algo=ConvAlgo.MaskImplicitGemm)
+          (1): Linear(in_features=64, out_features=64, bias=True)
+          (2): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+        )
+        (norm1): PointSequential(
+          (0): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+        )
+        (attn): SerializedAttention(
+          (attn_drop): Dropout(p=0.0, inplace=False)
+          (qkv): Linear(in_features=64, out_features=192, bias=True)
+          (proj): Linear(in_features=64, out_features=64, bias=True)
+          (proj_drop): Dropout(p=0.0, inplace=False)
+          (softmax): Softmax(dim=-1)
+        )
+        (norm2): PointSequential(
+          (0): LayerNorm((64,), eps=1e-05, elementwise_affine=True)
+        )
+        (mlp): PointSequential(
+          (0): MLP(
+            (fc1): Linear(in_features=64, out_features=256, bias=True)
+            (act): GELU(approximate='none')
+            (fc2): Linear(in_features=256, out_features=64, bias=True)
+            (drop): Dropout(p=0.0, inplace=False)
+          )
+        )
+        (drop_path): Identity()
+      )
+    )
+  )
+  (head): Sequential(
+    (0): Linear(in_features=64, out_features=256, bias=True)
+    (1): ReLU(inplace=True)
+    (2): Dropout(p=0.3, inplace=False)
+    (3): Linear(in_features=256, out_features=5, bias=True)
+  )
+)
+[2025-10-31 22:14:26,986 INFO train.py line 232 53373] ============================================================
+[2025-10-31 22:14:26,987 INFO train.py line 280 53373] 
+===== Epoch 1/60 =====
+[2025-10-31 22:14:26,987 INFO train.py line 281 53373] 当前学习率: 0.000150

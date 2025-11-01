@@ -50,14 +50,29 @@ data:
     radius: 100.0      # 邻域半径
     transform:
       - type: NormalizeWind  # 风速标准化
-        u_mean: -0.7983   # 替换为真实u均值
-        u_std: 2.6732     # 替换为真实u标准差
-        v_mean: 2.0401    # 替换为真实v均值
-        v_std: 3.1915     # 替换为真实v标准差
-        beamaz_mean: 184.0494  # 替换为真实beamaz均值
-        beamaz_std: 100.2158   # 替换为真实beamaz标准差
+        u_mean: 0.1202
+        u_std: 4.4156
+        v_mean: -0.4453
+        v_std: 4.4386
+        beamaz_mean: 184.6787
+        beamaz_std: 98.1627
       - type: WindShearGridSample     # 网格采样
-        grid_size: [122.6, 118.0, 5.4]
+        # 🌟 新增：对类别1进行欠采样
+        # 0.1 表示只保留 10% 的类别1点
+        # 1.0 或不设置此字段 表示保留 100% (即不激活)
+        undersample_ratio: 0.5  # (您可以根据需要调整)
+
+        # 🌟 新增：按类别定义 SMOTE 比例
+        # 0.0 表示不增强
+        # 1.0 表示为该类别的每个点生成 1 个新点 (100% 增长)
+        # 0.3 表示 30% 增长
+        smote_ratios:
+          0: 0.0  # 类别 0 (无风切变) - 通常不增强
+          1: 0.0  # 类别 1 (轻微) - 我们正在欠采样，所以不增强
+          2: 0.5  # 类别 2 (中度) - 增强 50%
+          3: 1.0  # 类别 3 (重度) - 增强 100%
+          4: 1.0  # 类别 4 (严重) - 增强 100%
+        grid_size: [128.7, 123.4, 12.1]
         min_points: 50
         adaptive: False
       - type: ToTensor       # 转换为张量
@@ -70,14 +85,14 @@ data:
     radius: 100.0
     transform:
       - type: NormalizeWind
-        u_mean: -0.7983   # 替换为真实u均值
-        u_std: 2.6732     # 替换为真实u标准差
-        v_mean: 2.0401    # 替换为真实v均值
-        v_std: 3.1915     # 替换为真实v标准差
-        beamaz_mean: 184.0494  # 替换为真实beamaz均值
-        beamaz_std: 100.2158   # 替换为真实beamaz标准差
+        u_mean: 0.1202
+        u_std: 4.4156
+        v_mean: -0.4453
+        v_std: 4.4386
+        beamaz_mean: 184.6787
+        beamaz_std: 98.1627
       - type: WindShearGridSample
-        grid_size: [122.6, 118.0, 5.4]
+        grid_size: [128.7, 123.4, 12.1]
         min_points: 50
         adaptive: False
       - type: ToTensor
@@ -90,14 +105,14 @@ data:
     radius: 100.0
     transform:
       - type: NormalizeWind
-        u_mean: -0.7983   # 替换为真实u均值
-        u_std: 2.6732     # 替换为真实u标准差
-        v_mean: 2.0401    # 替换为真实v均值
-        v_std: 3.1915     # 替换为真实v标准差
-        beamaz_mean: 184.0494  # 替换为真实beamaz均值
-        beamaz_std: 100.2158   # 替换为真实beamaz标准差
+        u_mean: 0.1202
+        u_std: 4.4156
+        v_mean: -0.4453
+        v_std: 4.4386
+        beamaz_mean: 184.6787
+        beamaz_std: 98.1627
       - type: WindShearGridSample
-        grid_size: [122.6, 118.0, 5.4]
+        grid_size: [128.7, 123.4, 12.1]
         min_points: 50
         adaptive: False
       - type: ToTensor
@@ -117,8 +132,8 @@ train:
     type: CosineAnnealingLR
     T_max: 100
     eta_min: 0.00001
-  two_stage: true
-  class_weights: [ 0.8, 0.1, 1.0, 4.5, 2.5 ]   # 与之前一致
+  two_stage: false
+  class_weights: [ 34.4436, 2.0248, 4.3912, 13.7286, 10.4351 ]
   stage_epochs: [ 100, 30 ]                     # 阶段1/2 轮数
 
 # 验证配置（新增，专门用于 val 阶段）
